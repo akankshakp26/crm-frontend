@@ -1,23 +1,28 @@
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
+import LeadsPage from './pages/LeadsPage'; 
+import ClientsPage from './pages/ClientsPage';
+
+// Placeholder for Dashboard - you can move your "Welcome" text here
+const Dashboard = () => (
+  <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+    <h1 className="text-3xl font-bold text-gray-800">Welcome to the CRM</h1>
+    <p className="mt-2 text-gray-600">Valise's Workspace. Let's start managing those clients!</p>
+  </div>
+);
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/leads" element={<LeadsPage />} />
+            <Route path="/clients" element={<ClientsPage />} />
+          </Routes>
+        </Layout>
+      </Router>
     </div>
   );
 }
