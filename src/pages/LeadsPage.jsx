@@ -40,7 +40,45 @@ const LeadsPage = () => {
 
       {/* Leads Table - Using the code from our previous step */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* ... Table logic goes here ... */}
+        {/* Leads Table */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <table className="w-full text-left">
+          <thead className="bg-gray-50 text-gray-500 text-sm">
+            <tr>
+              <th className="p-4 font-semibold">Lead Name</th>
+              <th className="p-4 font-semibold">Organization</th>
+              <th className="p-4 font-semibold">Status</th>
+              <th className="p-4 font-semibold text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {leads.map((lead) => (
+              <tr key={lead.id} className="hover:bg-blue-50/50 transition-colors">
+                <td className="p-4 font-medium text-slate-700">{lead.name}</td>
+                <td className="p-4 text-gray-600">{lead.org}</td>
+                <td className="p-4">
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                    {lead.status}
+                  </span>
+                </td>
+                <td className="p-4 text-right">
+                  <button 
+                    onClick={() => handleConvert(lead.id, lead.name)}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-bold bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    Convert to Client
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {leads.length === 0 && (
+          <div className="p-10 text-center text-gray-400">
+            No leads found. Click "Add New Lead" to get started!
+          </div>
+        )}
+      </div>
       </div>
 
       {/* ADD LEAD MODAL */}
