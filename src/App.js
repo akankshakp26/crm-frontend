@@ -5,12 +5,45 @@ import LeadsPage from './pages/LeadsPage';
 import ClientsPage from './pages/ClientsPage';
 import Pipeline from './pages/Pipeline';
 import Journey from './pages/Journey';
-const Dashboard = () => (
-  <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-    <h1 className="text-3xl font-bold text-gray-800">Welcome to the CRM</h1>
-    <p className="mt-2 text-gray-600">Valise's Workspace. Let's start managing those clients!</p>
-  </div>
-);
+import RecentActivity from './components/RecentActivity';
+const Dashboard = () => {
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="mb-10">
+        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Performance Overview</h1>
+        <p className="text-slate-500 mt-2 text-lg italic">Welcome back! Here's a summary of Valise's CRM activities.</p>
+      </div>
+      
+      {/* Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+        <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+          <p className="text-slate-400 font-bold text-xs uppercase tracking-widest text-center">Active Leads</p>
+          <p className="text-4xl font-black text-slate-900 mt-2 text-center">2,842</p>
+        </div>
+        <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+          <p className="text-slate-400 font-bold text-xs uppercase tracking-widest text-center">Lead-to-Client Rate</p>
+          <p className="text-4xl font-black text-slate-900 mt-2 text-center">32.4%</p>
+        </div>
+        <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+          <p className="text-slate-400 font-bold text-xs uppercase tracking-widest text-center">Revenue Forecast</p>
+          <p className="text-4xl font-black text-slate-900 mt-2 text-center">$42,500</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white h-full relative overflow-hidden">
+            <h2 className="text-3xl font-bold mb-2">Revenue Trends</h2>
+            <p className="text-slate-400">Your high-priority leads have increased by 12% this week.</p>
+          </div>
+        </div>
+        <div className="lg:col-span-1">
+          <RecentActivity />
+        </div>
+      </div>
+    </div>
+  );
+};
 function App() {
   return (
     <Router>
