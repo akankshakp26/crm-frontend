@@ -5,13 +5,14 @@ import LeadsPage from './pages/LeadsPage';
 import ClientsPage from './pages/ClientsPage';
 import Pipeline from './pages/Pipeline';
 import Journey from './pages/Journey';
+import InteractionLogs from './components/InteractionLogs';
 import RecentActivity from './components/RecentActivity';
 const Dashboard = () => {
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="animate-in fade-in duration-700">
       <div className="mb-10">
         <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Performance Overview</h1>
-        <p className="text-slate-500 mt-2 text-lg italic">Welcome back! Here's a summary of Valise's CRM activities.</p>
+        <p className="text-slate-500 mt-2 text-lg italic">Valise CRM • Live System Status</p>
       </div>
       
       {/* Stats Row */}
@@ -31,12 +32,23 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Analytics Card */}
         <div className="lg:col-span-2">
-          <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white h-full relative overflow-hidden">
-            <h2 className="text-3xl font-bold mb-2">Revenue Trends</h2>
-            <p className="text-slate-400">Your high-priority leads have increased by 12% this week.</p>
+          <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white h-full relative overflow-hidden flex flex-col justify-between">
+            <div>
+              <h2 className="text-3xl font-bold mb-4">Strategic Insights</h2>
+              <p className="text-slate-400 text-lg leading-relaxed">
+                Your high-priority leads have increased by 12% this week. Focus on the "Negotiation" stage in your pipeline to hit Q1 targets.
+              </p>
+            </div>
+            {/* We can put the InteractionLogs here to fill space beautifully */}
+            <div className="mt-10">
+               <InteractionLogs />
+            </div>
           </div>
         </div>
+        
+        {/* Sidebar Activity */}
         <div className="lg:col-span-1">
           <RecentActivity />
         </div>
