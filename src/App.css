@@ -36,3 +36,28 @@
     transform: rotate(360deg);
   }
 }
+/* Glassmorphism Styles */
+.glass-panel-white {
+  background: rgba(255, 255, 255, 0.4); /* Semi-transparent white */
+  backdrop-filter: blur(12px); /* This creates the frosted effect */
+  -webkit-backdrop-filter: blur(12px); /* Support for Safari */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 40px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+
+.glass-panel-dark {
+  background: rgba(15, 23, 42, 0.9); /* Semi-transparent dark */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 40px;
+}
+
+/* The Background Grid to make the blur visible */
+.dashboard-bg {
+  background-color: #f8fafc;
+  background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px);
+  background-size: 32px 32px;
+  min-height: 100vh;
+}

@@ -3,56 +3,43 @@ import { UserPlus, Search, MoreVertical } from 'lucide-react';
 
 const Leads = () => {
   // Mock data based on your team's Lead Schema [cite: 23]
-  const [leads] = useState([
-    { id: 1, name: "Arjun Mehta", org: "Tech Solutions", status: "New", engagement: "High" },
-    { id: 2, name: "Sita Rao", org: "Green Energy", status: "Contacted", engagement: "Medium" },
-  ]);
+const LeadsPage = () => {
+  const leads = [
+    { id: 1, name: 'Alpha Corp', contact: 'Rahul S.', status: 'New', value: '$5,000' },
+    { id: 2, name: 'Beta Tech', contact: 'Sneha M.', status: 'Contacted', value: '$12,000' },
+    { id: 3, name: 'Global Sol.', contact: 'Vikram K.', status: 'Negotiation', value: '$8,500' },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-800">Lead Management</h2>
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-          <UserPlus size={18} /> Add New Lead
+    <div className="clean-card p-8">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-2xl font-black text-slate-800">Active Leads</h2>
+        <button className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30">
+          + Add New Lead
         </button>
       </div>
 
-      {/* Search Bar [cite: 28] */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <input 
-          type="text" 
-          placeholder="Search leads or organizations..." 
-          className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-        />
-      </div>
-
-      {/* Leads Table [cite: 215] */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-gray-500 text-sm">
-            <tr>
-              <th className="p-4 font-semibold">Lead Name</th>
-              <th className="p-4 font-semibold">Organization</th>
-              <th className="p-4 font-semibold">Status</th>
-              <th className="p-4 font-semibold">Actions</th>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b-2 border-slate-100 text-left">
+              <th className="pb-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Company</th>
+              <th className="pb-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Contact</th>
+              <th className="pb-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Status</th>
+              <th className="pb-4 font-black text-slate-400 uppercase text-[10px] tracking-widest text-right">Value</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-slate-100">
             {leads.map((lead) => (
-              <tr key={lead.id} className="hover:bg-blue-50/50 transition">
-                <td className="p-4 font-medium text-slate-700">{lead.name}</td>
-                <td className="p-4 text-gray-600">{lead.org}</td>
-                <td className="p-4">
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+              <tr key={lead.id} className="group hover:bg-slate-50/50 transition-colors">
+                <td className="py-5 font-bold text-slate-700">{lead.name}</td>
+                <td className="py-5 text-slate-500 font-medium">{lead.contact}</td>
+                <td className="py-5">
+                  <span className="px-3 py-1 rounded-lg bg-blue-50 text-blue-600 text-xs font-black uppercase">
                     {lead.status}
                   </span>
                 </td>
-                <td className="p-4">
-                  <button className="text-blue-600 hover:underline text-sm font-semibold">
-                    Convert to Client
-                  </button>
-                </td>
+                <td className="py-5 text-right font-black text-slate-800">{lead.value}</td>
               </tr>
             ))}
           </tbody>
@@ -61,5 +48,5 @@ const Leads = () => {
     </div>
   );
 };
-
+}
 export default Leads;
