@@ -1,48 +1,81 @@
-import React from 'react';
-import { DollarSign, MoreHorizontal, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { DollarSign, X, CheckCircle } from 'lucide-react';
 
-const Pipeline = () => {
-  const stages = [
-    { name: "Qualification", deals: [{ id: 1, title: "Alpha Corp Tech", value: "$5,000" }] },
-    { name: "Proposal", deals: [{ id: 2, title: "Green Valley Setup", value: "$2,500" }] },
-    { name: "Negotiation", deals: [] },
-    { name: "Closed Won", deals: [{ id: 3, title: "Blue Sky Exports", value: "$12,000" }] }
-  ];
+const PipelinePage = () => {
+  const [leads, setLeads] = useState([
+    { id: 1, company: 'Alpha Corp', value: 5000, time: '2d ago', stage: 'Discovery' },
+    { id: 2, company: 'Vertex Media', value: 3000, time: '1d ago', stage: 'Discovery' },
+    { id: 3, company: 'Skyline Ltd', value: 7000, time: '5h ago', stage: 'Proposal' },
+    { id: 4, company: 'Global Solutions', value: 12000, time: 'Just now', stage: 'Negotiation' },
+    { id: 5, company: 'Beta Tech', value: 8000, time: '3d ago', stage: 'Negotiation' },
+    { id: 6, company: 'Omega Inc', value: 20000, time: '1w ago', stage: 'Closed Won' }
+  ]);
+
+  const [notification, setNotification] = useState(null);
+  const stages = ['Discovery', 'Proposal', 'Negotiation', 'Closed Won'];
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const onDragStart = (e, id) => e.dataTransfer.setData("id", id);
+  const onDragOver = (e) => e.preventDefault();
+  
+  const onDrop = (e, targetStage) => {
+    const id = e.dataTransfer.getData("id");
+    const lead = leads.find(l => l.id.toString() === id);
+
+    // Show professional notification instead of confetti
+    if (targetStage === 'Closed Won' && lead.stage !== 'Closed Won') {
+      setNotification(`Deal Secured: ${lead.company} moved to Closed Won!`);
+    }
+
+    setLeads(leads.map(l => l.id.toString() === id ? { ...l, stage: targetStage } : l));
+  };
+
+  const getStageTotal = (stage) => {
+    return leads.filter(l => l.stage === stage)
+      .reduce((sum, current) => sum + current.value, 0).toLocaleString();
+  };
 
   return (
-    <div className="space-y-6 h-full">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-slate-900">Sales Pipeline</h1>
-        <div className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-          Total Forecast: $19,500
+    <div className="relative min-h-screen p-4">
+      {/* TOAST NOTIFICATION - Professional Corporate Style */}
+      {notification && (
+        <div className="fixed top-10 right-10 z-[100] flex items-center gap-3 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-right-10 duration-300 border-l-4 border-l-blue-500">
+          <CheckCircle className="text-blue-400" size={20} />
+          <p className="font-bold text-sm">{notification}</p>
+          <button onClick={() => setNotification(null)} className="ml-4 text-slate-400 hover:text-white">
+            <X size={16} />
+          </button>
         </div>
+      )}
+
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Sales Pipeline</h1>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-4 h-[calc(100vh-200px)]">
-        {stages.map((stage, idx) => (
-          <div key={idx} className="min-w-[280px] bg-gray-100/50 rounded-2xl p-4 flex flex-col">
-            <div className="flex justify-between items-center mb-4 px-1">
-              <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider">{stage.name}</h3>
-              <span className="text-xs font-bold text-gray-400 bg-white px-2 py-0.5 rounded-md shadow-sm">
-                {stage.deals.length}
-              </span>
+      <div className="flex gap-4 overflow-x-auto pb-6">
+        {stages.map((stage) => (
+          <div key={stage} className="flex-shrink-0 w-72 bg-slate-50/50 p-4 rounded-[2.5rem]" onDragOver={onDragOver} onDrop={(e) => onDrop(e, stage)}>
+            <div className="mb-6 px-1">
+              <h3 className="font-black text-slate-400 uppercase text-[10px] tracking-widest">{stage}</h3>
+              <div className="flex items-center text-blue-600 gap-0.5 font-black text-sm">
+                <DollarSign size={12} strokeWidth={3} /> {getStageTotal(stage)}
+              </div>
             </div>
-            
-            <div className="space-y-3 flex-1 overflow-y-auto">
-              {stage.deals.map((deal) => (
-                <div key={deal.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-blue-300 transition-colors cursor-grab">
-                  <p className="font-bold text-slate-800 text-sm mb-2">{deal.title}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-green-600 flex items-center">
-                      <DollarSign size={12} /> {deal.value}
-                    </span>
-                    <button className="text-gray-300 hover:text-gray-600"><MoreHorizontal size={16}/></button>
-                  </div>
+
+            <div className="space-y-3 min-h-[250px]">
+              {leads.filter(l => l.stage === stage).map((lead) => (
+                <div key={lead.id} draggable onDragStart={(e) => onDragStart(e, lead.id)} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm cursor-grab border-l-4 border-l-blue-600">
+                  <h4 className="font-bold text-slate-800 text-sm">{lead.company}</h4>
+                  <p className="text-sm font-black text-slate-900 mt-2">${lead.value.toLocaleString()}</p>
                 </div>
               ))}
-              <button className="w-full py-2 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 hover:text-blue-500 hover:border-blue-200 transition-all flex items-center justify-center gap-1 text-sm font-medium">
-                <Plus size={16} /> Add Deal
-              </button>
             </div>
           </div>
         ))}
@@ -51,4 +84,4 @@ const Pipeline = () => {
   );
 };
 
-export default Pipeline;
+export default PipelinePage;

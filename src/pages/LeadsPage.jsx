@@ -1,123 +1,123 @@
 import React, { useState } from 'react';
-import { Search, Filter, UserPlus, CheckCircle, Trash2, Edit, X } from 'lucide-react';
+import { Edit2, Trash2, Search, Plus, AlertCircle, X } from 'lucide-react'; 
+import { initialLeads } from './Leads'; 
 
 const LeadsPage = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [leads, setLeads] = useState([
-    { id: 1, name: "Arjun Mehta", org: "Tech Solutions", status: "New", email: "arjun@techsol.com" },
-    { id: 2, name: "Sita Rao", org: "Green Energy", status: "Contacted", email: "sita@greenenergy.in" },
-  ]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [leads, setLeads] = useState(initialLeads);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedLead, setSelectedLead] = useState(null);
 
-  const handleConvert = (id, name) => {
-    setLeads(leads.filter(lead => lead.id !== id));
-    alert(`${name} converted to Client!`);
+  const requestDelete = (lead) => {
+    setSelectedLead(lead);
+    setShowModal(true);
   };
 
+  const confirmDelete = () => {
+    setLeads(leads.filter(l => l.id !== selectedLead.id));
+    setShowModal(false);
+    setSelectedLead(null);
+  };
+
+  const filteredLeads = leads.filter(lead => 
+    lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lead.contact.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-slate-900">Leads Management</h1>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-blue-700 shadow-sm"
-        >
-          <UserPlus size={18} /> Add New Lead
-        </button>
-      </div>
-
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <input 
-          type="text" 
-          placeholder="Search leads..." 
-          className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      {/* Leads Table - Using the code from our previous step */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* Leads Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-gray-500 text-sm">
-            <tr>
-              <th className="p-4 font-semibold">Lead Name</th>
-              <th className="p-4 font-semibold">Organization</th>
-              <th className="p-4 font-semibold">Status</th>
-              <th className="p-4 font-semibold text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {leads.map((lead) => (
-              <tr key={lead.id} className="hover:bg-blue-50/50 transition-colors">
-                <td className="p-4 font-medium text-slate-700">{lead.name}</td>
-                <td className="p-4 text-gray-600">{lead.org}</td>
-                <td className="p-4">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
-                    {lead.status}
-                  </span>
-                </td>
-                <td className="p-4 text-right">
-                  <button 
-                    onClick={() => handleConvert(lead.id, lead.name)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-bold bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    Convert to Client
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {leads.length === 0 && (
-          <div className="p-10 text-center text-gray-400">
-            No leads found. Click "Add New Lead" to get started!
+    <div className="relative min-h-screen">
+      <div className={`transition-all duration-300 ${showModal ? 'blur-sm grayscale-[0.5]' : ''}`}>
+        <div className="flex justify-between items-center mb-10">
+          <div>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Lead Management</h1>
+            <p className="text-slate-500 mt-1 font-medium italic text-sm">Reviewing {filteredLeads.length} active opportunities</p>
           </div>
-        )}
-      </div>
+          <button className="bg-slate-900 text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center gap-2">
+            <Plus size={20} /> Add New Lead
+          </button>
+        </div>
+
+        <div className="relative mb-8 group">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+          <input 
+            type="text"
+            placeholder="Search by company..."
+            className="w-full pl-14 pr-6 py-5 rounded-3xl border-2 border-slate-100 outline-none focus:border-blue-500 transition-all shadow-sm font-medium"
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* --- FIXED ALIGNMENT TABLE --- */}
+        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50/50 border-b border-slate-100">
+              <tr>
+                <th className="p-8 font-black text-slate-400 uppercase text-[10px] tracking-widest text-left">Company</th>
+                {/* ALIGNMENT FIX: Headers now match the data */}
+                <th className="p-8 font-black text-slate-400 uppercase text-[10px] tracking-widest text-left">Status</th>
+                <th className="p-8 font-black text-slate-400 uppercase text-[10px] tracking-widest text-left">Value</th>
+                <th className="p-8 font-black text-slate-400 uppercase text-[10px] tracking-widest text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filteredLeads.map((lead) => (
+                <tr key={lead.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="p-8 font-bold text-slate-800">{lead.name}</td>
+                  
+                  {/* ALIGNMENT FIX: Status badge aligned to the left */}
+                  <td className="p-8 text-left">
+                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider ${
+                      lead.status === 'Negotiation' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {lead.status}
+                    </span>
+                  </td>
+
+                  {/* ALIGNMENT FIX: Value text aligned to the left */}
+                  <td className="p-8 text-left font-black text-slate-900 text-lg">
+                    {lead.value}
+                  </td>
+
+                  <td className="p-8 text-center">
+                    <div className="flex justify-center gap-2">
+                      <button className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                        <Edit2 size={18} />
+                      </button>
+                      <button 
+                        onClick={() => requestDelete(lead)}
+                        className="p-3 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* ADD LEAD MODAL */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex justify-between items-center p-6 border-b">
-              <h2 className="text-xl font-bold text-slate-900">Add New Lead</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+      {/* DELETE CONFIRMATION MODAL */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-start mb-6">
+              <div className="p-4 bg-red-50 text-red-600 rounded-2xl">
+                <AlertCircle size={32} />
+              </div>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 p-2">
                 <X size={24} />
               </button>
             </div>
-            
-            <form className="p-6 space-y-4" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Lead Name</label>
-                <input required type="text" className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Rajesh Khanna" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Organization</label>
-                <input required type="text" className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Global Tech" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Email Address</label>
-                <input required type="email" className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="name@company.com" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Initial Status</label>
-                <select className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                  <option>New</option>
-                  <option>Contacted</option>
-                  <option>Qualified</option>
-                </select>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 border border-gray-200 rounded-lg font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
-                <button type="submit" className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700">Save Lead</button>
-              </div>
-            </form>
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Delete Lead?</h2>
+            <p className="text-slate-500 font-medium mb-8 leading-relaxed">
+              Are you sure you want to remove <span className="text-slate-900 font-bold">{selectedLead?.name}</span>? This action cannot be undone.
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <button onClick={() => setShowModal(false)} className="py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-colors">Cancel</button>
+              <button onClick={confirmDelete} className="py-4 rounded-2xl font-bold text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-200 transition-all">Yes, Delete</button>
+            </div>
           </div>
         </div>
       )}

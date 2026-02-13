@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building2, Mail, ExternalLink, ShieldCheck, Star } from 'lucide-react';
+import { Building2, ExternalLink, ShieldCheck} from 'lucide-react';
 
 const ClientsPage = () => {
   // Mock data based on the Client Management requirements [cite: 32, 34]
