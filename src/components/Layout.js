@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { CheckSquare } from "lucide-react";
+
 import { 
   LayoutDashboard, Users, GitMerge, Settings, Map, Search, LogOut, Bell, ChevronDown, User, ShieldCheck, CheckCheck, Trash2
 } from 'lucide-react';
@@ -28,6 +30,9 @@ const Layout = ({ children, onLogout, user, searchTerm, setSearchTerm }) => {
     { name: 'Pipeline', path: '/pipeline', icon: Settings },
     { name: 'Clients', path: '/clients', icon: Users },
     { name: 'Journey', path: '/journey', icon: Map },
+    { name: "Tasks", path: "/tasks", icon: CheckSquare },
+
+
   ];
 
   return (

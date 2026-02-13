@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import TasksPage from "./pages/TasksPage";
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 // Layout & Core Components
@@ -132,6 +134,8 @@ const [leads, setLeads] = useState([
                   <Route path="/pipeline" element={<Pipeline leads={filteredLeads} setLeads={setLeads} user={user} />} />
                   <Route path="/journey" element={<Journey selectedLead={selectedLead} />} />
                   <Route path="/profile" element={<Profile user={user} setUser={setUser} />} />
+                  <Route path="/tasks" element={<TasksPage />} />
+
                 </Routes>
               </Layout>
             ) : <Navigate to="/login" />
