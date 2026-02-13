@@ -1,41 +1,50 @@
 import React from 'react';
-import { Flag, Zap, CheckCircle2, MessageSquare, Handshake } from 'lucide-react';
+import { CheckCircle2, ArrowLeft, Calendar, FileText, MessageSquare } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-const Journey = () => {
-  const milestones = [
-    { title: "First Contact", date: "Jan 10, 2026", desc: "Initial inquiry via website", icon: MessageSquare, status: "completed" },
-    { title: "Lead Qualified", date: "Jan 15, 2026", desc: "Passed sales discovery call", icon: Zap, status: "completed" },
-    { title: "Contract Signed", date: "Jan 28, 2026", desc: "Official conversion to Enterprise Client", icon: Handshake, status: "completed" },
-    { title: "Project Kickoff", date: "Feb 05, 2026", desc: "Internal team assigned", icon: Flag, status: "current" },
-    { title: "First Delivery", date: "Pending", desc: "Expected milestone for Q1", icon: CheckCircle2, status: "upcoming" },
+const Journey = ({ selectedLead }) => {
+  const navigate = useNavigate();
+  const companyName = selectedLead ? selectedLead.company : "No Lead Selected";
+  const value = selectedLead ? selectedLead.value : 0;
+
+  const timelineData = [
+    { id: 1, title: "Lead Entry", date: "Feb 01", desc: `${companyName} was added to the CRM pipeline.`, status: "completed", icon: <Calendar size={20}/> },
+    { id: 2, title: "Initial Contact", date: "Feb 05", desc: "Discovery call conducted with the stakeholders.", status: "completed", icon: <MessageSquare size={20}/> },
+    { id: 3, title: "Proposal Phase", date: "Feb 10", desc: `Drafting a contract with a forecast value of $${value.toLocaleString()}.`, status: "in-progress", icon: <FileText size={20}/> },
   ];
 
   return (
-    <div className="max-w-4xl mx-auto py-10">
-      <h1 className="text-3xl font-black text-slate-900 mb-12 tracking-tight">Client Journey Roadmap</h1>
-      
-      <div className="relative border-l-4 border-slate-100 ml-6 space-y-12">
-        {milestones.map((step, i) => (
-          <div key={i} className="relative pl-12">
-            {/* The Dot */}
-            <div className={`absolute -left-[14px] top-1 h-6 w-6 rounded-full border-4 border-white shadow-sm flex items-center justify-center ${
-              step.status === 'completed' ? 'bg-blue-600' : step.status === 'current' ? 'bg-amber-500 animate-pulse' : 'bg-slate-200'
-            }`}>
-              {step.status === 'completed' && <div className="h-1.5 w-1.5 bg-white rounded-full"></div>}
-            </div>
+    <div className="max-w-4xl mx-auto text-left animate-in fade-in duration-700">
+      <button 
+        onClick={() => navigate('/leads')} 
+        className="mb-8 flex items-center gap-2 text-slate-400 hover:text-slate-900 font-bold text-sm transition-all"
+      >
+        <ArrowLeft size={16} /> Back to Leads
+      </button>
 
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-3">
-                  <step.icon className={step.status === 'completed' ? 'text-blue-600' : 'text-slate-400'} size={20} />
-                  <h3 className="font-bold text-lg text-slate-800">{step.title}</h3>
-                </div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{step.date}</span>
+      <div className="mb-12">
+        <h1 className="text-4xl font-black text-slate-900 tracking-tight">{companyName}</h1>
+        <p className="text-blue-600 font-bold mt-2 uppercase tracking-widest text-[10px]">Strategic Client Roadmap</p>
+      </div>
+
+      <div className="relative">
+        <div className="absolute left-8 top-0 bottom-0 w-1 bg-slate-100 rounded-full"></div>
+        <div className="space-y-12">
+          {timelineData.map((item) => (
+            <div key={item.id} className="relative flex items-start gap-12 group">
+              <div className={`z-10 w-16 h-16 rounded-3xl flex items-center justify-center border-4 border-white shadow-xl ${item.status === 'completed' ? 'bg-blue-600 text-white shadow-blue-100' : 'bg-white text-blue-600 border-blue-50 shadow-sm'}`}>
+                {item.status === 'completed' ? <CheckCircle2 size={24} /> : item.icon}
               </div>
-              <p className="text-slate-500 text-sm leading-relaxed">{step.desc}</p>
+              <div className="flex-1 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-xl font-black text-slate-900">{item.title}</h3>
+                  <span className="text-[10px] font-black text-slate-400 uppercase bg-slate-50 px-3 py-1 rounded-full">{item.date}</span>
+                </div>
+                <p className="text-sm font-medium text-slate-500 leading-relaxed">{item.desc}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
