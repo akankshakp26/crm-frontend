@@ -134,6 +134,11 @@ const Layout = ({ children, onLogout, user, searchTerm, setSearchTerm }) => {
         <section className="flex-1 overflow-y-auto bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
           <div className="max-w-[1400px] mx-auto p-8 lg:p-12 animate-in fade-in duration-700">{children}</div>
         </section>
+        {/* ✅ Global Footer */}
+<footer className="text-center py-6 text-sm text-slate-400 border-t border-slate-200 bg-white">
+  © {new Date().getFullYear()} Valise CRM. All rights reserved.
+</footer>
+
       </main>
     </div>
   );

@@ -77,6 +77,8 @@ const LeadsPage = ({ leads: leadsProp, setLeads: setLeadsProp, setSelectedLead }
 
   return (
     <div className="relative p-4 text-left">
+
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-10">
         <h1 className="text-4xl font-black text-slate-900">
           Lead Management
@@ -84,12 +86,13 @@ const LeadsPage = ({ leads: leadsProp, setLeads: setLeadsProp, setSelectedLead }
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="bg-slate-900 text-white px-8 py-3.5 rounded-2xl font-black flex items-center gap-2"
+          className="bg-slate-900 text-white px-8 py-3.5 rounded-2xl font-black flex items-center gap-2 hover:scale-105 transition"
         >
           <Plus size={20} /> Add New Lead
         </button>
       </div>
 
+      {/* TABLE */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-slate-50">
@@ -138,7 +141,7 @@ const LeadsPage = ({ leads: leadsProp, setLeads: setLeadsProp, setSelectedLead }
                 <td className="p-6 text-right">
                   <button
                     onClick={() => handleConvert(lead.id)}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black"
+                    className="px-5 py-2 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition"
                   >
                     Convert
                   </button>
@@ -166,6 +169,86 @@ const LeadsPage = ({ leads: leadsProp, setLeads: setLeadsProp, setSelectedLead }
           </tbody>
         </table>
       </div>
+
+      {/* DELETE POPUP */}
+      {deletingLead && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+          <div className="bg-white rounded-3xl p-10 max-w-sm w-full shadow-2xl text-center">
+            <div className="h-20 w-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <AlertTriangle size={40} />
+            </div>
+
+            <h2 className="text-2xl font-black text-slate-900 mb-2">
+              Delete Lead?
+            </h2>
+
+            <p className="text-slate-500 text-sm font-medium mb-8">
+              Are you sure you want to remove{" "}
+              <span className="font-bold text-slate-900">
+                {deletingLead.company}
+              </span>?
+            </p>
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => setDeletingLead(null)}
+                className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 transition"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={confirmDelete}
+                className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-black hover:bg-red-600 transition"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD MODAL */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <form
+            onSubmit={handleAddLead}
+            className="bg-white rounded-3xl p-12 max-w-md w-full shadow-2xl"
+          >
+            <h2 className="text-3xl font-black text-slate-900 mb-8">
+              New Lead
+            </h2>
+
+            <div className="space-y-4">
+              <input
+                className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-black"
+                placeholder="Company Name"
+                value={newLead.company}
+                onChange={(e) =>
+                  setNewLead({ ...newLead, company: e.target.value })
+                }
+              />
+
+              <input
+                className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-black"
+                placeholder="Value"
+                type="number"
+                value={newLead.value}
+                onChange={(e) =>
+                  setNewLead({ ...newLead, value: e.target.value })
+                }
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full mt-8 py-5 bg-slate-900 text-white rounded-2xl font-black"
+            >
+              Create Lead
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 };
