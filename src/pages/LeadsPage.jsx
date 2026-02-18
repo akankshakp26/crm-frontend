@@ -12,7 +12,6 @@ const LeadsPage = ({ setSelectedLead }) => {
 
   const API_URL = "http://localhost:5000/api/leads";
 
-  // Load leads from Harshitha's backend
   useEffect(() => {
     const fetchLeads = async () => {
       try {
@@ -43,7 +42,23 @@ const LeadsPage = ({ setSelectedLead }) => {
       body: JSON.stringify(leadData)
     });
     if (response.ok) {
-      window.location.reload(); // Refresh to show new data
+      window.location.reload(); 
+    }
+  };
+
+  const handleConvert = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Qualified" })
+      });
+
+      if (response.ok) {
+        setLeads(leads.map(l => l.id === id ? { ...l, status: "Qualified" } : l));
+      }
+    } catch (err) {
+      console.error("Conversion failed", err);
     }
   };
 
@@ -66,7 +81,7 @@ const LeadsPage = ({ setSelectedLead }) => {
         {isLoading ? (
           <div className="p-20 flex flex-col items-center gap-4 text-slate-400">
             <Loader2 className="animate-spin" size={40} />
-            <p className="font-bold">Connecting to crm's Database...</p>
+            <p className="font-bold">Syncing with crm's Database...</p>
           </div>
         ) : leads.length === 0 ? (
           <div className="p-20 text-center text-slate-400 font-bold">
@@ -79,6 +94,7 @@ const LeadsPage = ({ setSelectedLead }) => {
                 <th className="p-6 text-xs font-black text-slate-400 uppercase">Company</th>
                 <th className="p-6 text-xs font-black text-slate-400 text-center uppercase">Status</th>
                 <th className="p-6 text-xs font-black text-slate-400 text-right uppercase">Value</th>
+                <th className="p-6 text-xs font-black text-slate-400 text-right uppercase">Convert</th>
                 <th className="p-6 text-xs font-black text-slate-400 text-right uppercase">Actions</th>
               </tr>
             </thead>
@@ -87,9 +103,20 @@ const LeadsPage = ({ setSelectedLead }) => {
                 <tr key={lead.id}>
                   <td className="p-6 font-black text-slate-800">{lead.company}</td>
                   <td className="p-6 text-center">
-                    <span className="px-3 py-1 rounded-lg text-xs font-black bg-blue-100 text-blue-700">{lead.status}</span>
+                    <span className={`px-3 py-1 rounded-lg text-xs font-black ${lead.status === 'Qualified' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {lead.status}
+                    </span>
                   </td>
                   <td className="p-6 text-right font-black">${lead.value.toLocaleString()}</td>
+                  <td className="p-6 text-right">
+                    <button
+                      onClick={() => handleConvert(lead.id)}
+                      disabled={lead.status === "Qualified"}
+                      className={`px-5 py-2 rounded-2xl text-xs font-black uppercase tracking-widest transition ${lead.status === 'Qualified' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    >
+                      {lead.status === "Qualified" ? "Qualified" : "Convert"}
+                    </button>
+                  </td>
                   <td className="p-6 text-right">
                     <button onClick={() => setDeletingLead(lead)} className="text-slate-400 hover:text-red-500">
                       <Trash2 size={18} />
