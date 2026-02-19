@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import TasksPage from "./pages/TasksPage";
+import axiosInstance from "./api/axiosInstance";
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Layout & Core Components
 import Layout from './components/Layout';
@@ -98,22 +100,45 @@ const Dashboard = ({ leads }) => {
 };
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(
+  !!localStorage.getItem("token")
+);
+
   const [selectedLead, setSelectedLead] = useState(null);
   const [searchTerm, setSearchTerm] = useState(''); // SEARCH STATE
   const [user, setUser] = useState({ name: "Akanksha", role: "Frontend Developer", initial: "A" });
-  
-  // Inside your App component in App.js
-const [leads, setLeads] = useState([
-  { id: 1, company: 'Alpha Corp', value: 15000, stage: 'Discovery', status: 'New' },
-  { id: 2, company: 'Vertex Media', value: 8500, stage: 'Proposal', status: 'Contacted' },
-  { id: 3, company: 'Skyline Ltd', value: 22000, stage: 'Negotiation', status: 'Contacted' },
-  { id: 4, company: 'Global Solutions', value: 45000, stage: 'Closed Won', status: 'Active' },
-  { id: 5, company: 'Nexus Systems', value: 12400, stage: 'Discovery', status: 'New' },
-  { id: 6, company: 'Horizon Logistics', value: 31000, stage: 'Proposal', status: 'Contacted' },
-]);
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+  const storedUser = localStorage.getItem("user");
 
-  const handleLogout = () => setIsAuthenticated(false);
+  if (token && storedUser) {
+    setIsAuthenticated(true);
+    setUser(JSON.parse(storedUser));
+  }
+}, []);
+
+const [leads, setLeads] = useState([]);
+useEffect(() => {
+  const fetchDashboardData = async () => {
+    try {
+      const res = await axiosInstance.get("/dashboard");
+      setLeads(res.data);
+    } catch (error) {
+      console.error("Dashboard fetch error:", error.response?.data);
+    }
+  };
+
+  if (localStorage.getItem("token")) {
+    fetchDashboardData();
+  }
+}, []);
+
+const handleLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  setIsAuthenticated(false);
+};
+
 
   // Filter leads globally based on the search bar in the header
   const filteredLeads = leads.filter(lead => 
@@ -124,23 +149,30 @@ const [leads, setLeads] = useState([
     <Router>
       <Routes>
         <Route path="/login" element={!isAuthenticated ? <LoginPage onLogin={() => setIsAuthenticated(true)} /> : <Navigate to="/" />} />
-        <Route path="/*" element={
-            isAuthenticated ? (
-              <Layout onLogout={handleLogout} user={user} searchTerm={searchTerm} setSearchTerm={setSearchTerm}>
-                <Routes>
-                  <Route path="/" element={<Dashboard leads={filteredLeads} />} />
-                  <Route path="/leads" element={<LeadsPage leads={filteredLeads} setLeads={setLeads} setSelectedLead={setSelectedLead} />} />
-                  <Route path="/clients" element={<ClientsPage leads={filteredLeads} />} />
-                  <Route path="/pipeline" element={<Pipeline leads={filteredLeads} setLeads={setLeads} user={user} />} />
-                  <Route path="/journey" element={<Journey selectedLead={selectedLead} />} />
-                  <Route path="/profile" element={<Profile user={user} setUser={setUser} />} />
-                  <Route path="/tasks" element={<TasksPage />} />
+        <Route
+  path="/*"
+  element={
+    <ProtectedRoute>
+      <Layout
+        onLogout={handleLogout}
+        user={user}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      >
+        <Routes>
+          <Route path="/" element={<Dashboard leads={filteredLeads} />} />
+          <Route path="/leads" element={<LeadsPage leads={filteredLeads} setLeads={setLeads} setSelectedLead={setSelectedLead} />} />
+          <Route path="/clients" element={<ClientsPage leads={filteredLeads} />} />
+          <Route path="/pipeline" element={<Pipeline leads={filteredLeads} setLeads={setLeads} user={user} />} />
+          <Route path="/journey" element={<Journey selectedLead={selectedLead} />} />
+          <Route path="/profile" element={<Profile user={user} setUser={setUser} />} />
+          <Route path="/tasks" element={<TasksPage />} />
+        </Routes>
+      </Layout>
+    </ProtectedRoute>
+  }
+/>
 
-                </Routes>
-              </Layout>
-            ) : <Navigate to="/login" />
-          } 
-        />
       </Routes>
     </Router>
   );

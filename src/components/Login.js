@@ -1,8 +1,68 @@
 import React, { useState } from 'react';
+import axiosInstance from "../api/axiosInstance";
+import { useNavigate } from "react-router-dom";
 
 const LoginPage = ({ onLogin }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [hoveredIcon, setHoveredIcon] = useState(null);
+  
+const navigate = useNavigate();
+
+const [email, setEmail] = useState("");
+const [password, setPassword] = useState("");
+const [error, setError] = useState("");
+const [name, setName] = useState("");
+
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  console.log("Form submitted");
+  setError("");
+
+  try {
+
+if (isSignUp) {
+  console.log("ENTERING REGISTER BLOCK");
+
+  await axiosInstance.post("/auth/register", {
+    name,
+    email,
+    password,
+  });
+
+  console.log("REGISTER SUCCESS");
+
+  alert("Registration successful!");
+
+  setName("");
+  setEmail("");
+  setPassword("");
+
+  setIsSignUp(false);
+
+  return;
+}
+
+
+    // 🔥 LOGIN
+    const res = await axiosInstance.post("/auth/login", {
+      email,
+      password,
+    });
+
+    localStorage.setItem("token", res.data.token);
+    localStorage.setItem("user", JSON.stringify(res.data.user));
+
+    onLogin(res.data.user);
+    navigate("/");
+
+  } catch (err) {
+  console.log("REGISTER ERROR:", err.response?.data);
+  setError(err.response?.data?.message || "Something went wrong");
+}
+
+};
+
 
   // --- THE NEW MIDNIGHT BLUE BRANDING ---
   // A deeper, more professional blue gradient
@@ -47,9 +107,18 @@ const LoginPage = ({ onLogin }) => {
       <div style={{ backgroundColor: '#fff', borderRadius: '32px', overflow: 'hidden', width: '850px', minHeight: '520px', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.2)' }}>
         
         {/* WHITE FORM SIDE */}
-        <div style={{ position: 'absolute', top: 0, height: '100%', width: '50%', left: isSignUp ? '50%' : '0', transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)', zIndex: 2 }}>
+        <div style={{
+  position: 'absolute',
+  top: 0,
+  height: '100%',
+  width: '50%',
+  left: isSignUp ? '50%' : '0',
+  transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+  zIndex: 20
+}}>
+
           <form style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '0 60px', textAlign: 'center' }} 
-                onSubmit={(e) => { e.preventDefault(); onLogin(); }}>
+                onSubmit={handleSubmit}>
             <h1 style={{ margin: 0, fontSize: '32px', fontWeight: '900', color: textDark }}>{isSignUp ? 'Join Valise' : 'Sign In'}</h1>
             
             <div style={{ margin: '30px 0', display: 'flex', gap: '15px' }}>
@@ -61,10 +130,38 @@ const LoginPage = ({ onLogin }) => {
             </div>
             
             <span style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '15px', fontWeight: '800', letterSpacing: '1.5px' }}>OR USE YOUR EMAIL</span>
-            {isSignUp && <input style={inputStyle} type="text" placeholder="Full Name" />}
-            <input style={inputStyle} type="email" placeholder="Email Address" />
-            <input style={inputStyle} type="password" placeholder="Password" />
-            <button style={primaryButtonStyle} type="submit">{isSignUp ? 'Sign Up' : 'Sign In'}</button>
+           {isSignUp && (
+  <input
+    style={inputStyle}
+    type="text"
+    placeholder="Full Name"
+    value={name}
+    onChange={(e) => setName(e.target.value)}
+  />
+)}
+
+              <input
+                style={inputStyle}
+                type="email"
+                placeholder="Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <input
+                style={inputStyle}
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+
+<button
+  style={primaryButtonStyle}
+  type="button"
+  onClick={handleSubmit}
+>
+
+{isSignUp ? 'Sign Up' : 'Sign In'}</button>
           </form>
         </div>
 
@@ -89,5 +186,7 @@ const LoginPage = ({ onLogin }) => {
 };
 
 const inputStyle = { backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', padding: '15px 20px', margin: '10px 0', width: '100%', borderRadius: '14px', outline: 'none', fontSize: '14px' };
+
+
 
 export default LoginPage;
