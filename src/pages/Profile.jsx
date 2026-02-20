@@ -1,11 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Briefcase, Mail, Save, ArrowLeft, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Profile = ({ user, setUser }) => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ ...user, email: "akanksha@valise.com" });
+const safeUser = user || { name: "", role: "", email: "" };
 
+const [formData, setFormData] = useState({
+  name: safeUser.name,
+  role: safeUser.role,
+  email: safeUser.email,
+});
+
+useEffect(() => {
+  if (user) {
+    setFormData({
+      name: user.name,
+      role: user.role,
+      email: user.email,
+    });
+  }
+}, [user]);
   const handleSave = (e) => {
     e.preventDefault();
     setUser({
@@ -36,10 +51,10 @@ const Profile = ({ user, setUser }) => {
         <div className="lg:col-span-1">
           <div className="bg-slate-900 p-10 rounded-[3rem] text-white text-center shadow-2xl">
             <div className="h-28 w-28 bg-blue-600 rounded-[2.5rem] mx-auto flex items-center justify-center text-4xl font-black mb-8 border-4 border-white/10 shadow-lg">
-              {user.initial}
+              {safeUser.name ? safeUser.name.charAt(0) : ""}
             </div>
-            <h2 className="text-2xl font-black tracking-tight">{user.name}</h2>
-            <p className="text-[10px] font-black uppercase tracking-widest mt-3 opacity-60">{user.role}</p>
+            <h2 className="text-2xl font-black tracking-tight">{safeUser.name}</h2>
+            <p className="text-[10px] font-black uppercase tracking-widest mt-3 opacity-60"></p>
             <div className="mt-10 pt-10 border-t border-white/5 space-y-4 text-left">
                <div className="flex items-center gap-3 text-slate-400 text-[10px] font-black uppercase tracking-widest">
                  <Shield size={14} className="text-blue-500" /> Administrator

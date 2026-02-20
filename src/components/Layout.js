@@ -7,6 +7,7 @@ import {
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const Layout = ({ children, onLogout, user, searchTerm, setSearchTerm }) => {
+  const safeUser = user || { name: "", role: "", initial: "safeUser.name?.charAt(0)" };
   const location = useLocation();
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -115,10 +116,15 @@ const Layout = ({ children, onLogout, user, searchTerm, setSearchTerm }) => {
             <div className="relative py-4" onMouseEnter={() => setShowProfileMenu(true)} onMouseLeave={() => setShowProfileMenu(false)}>
               <div className="flex items-center gap-3 cursor-pointer p-2 rounded-2xl hover:bg-slate-100/50 transition-all">
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-bold text-slate-800 leading-none">{user.name}</p>
-                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mt-1.5 opacity-80">{user.role}</p>
+                  <p className="text-sm font-bold text-slate-800 leading-none">
+  {safeUser.name}
+</p>
+
+<p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mt-1.5 opacity-80">
+  {safeUser.role}
+</p>
                 </div>
-                <div className="h-11 w-11 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white ring-offset-2 ring-offset-slate-50 flex-shrink-0">{user.initial}</div>
+               
                 <ChevronDown size={14} className={`text-slate-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
               </div>
               {showProfileMenu && (
@@ -128,6 +134,8 @@ const Layout = ({ children, onLogout, user, searchTerm, setSearchTerm }) => {
                   <button onClick={onLogout} className="w-full flex items-center gap-3 p-3 text-red-500 hover:bg-red-50 rounded-2xl font-bold text-xs text-left"><LogOut size={16} /> Logout</button>
                 </div>
               )}
+
+
             </div>
           </div>
         </header>

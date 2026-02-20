@@ -10,10 +10,9 @@ const LeadsPage = () => {
 
   const API_URL = "http://localhost:5000/api/leads";
 
-  // --- SECURITY LOGIC ---
-  // Get user info from localStorage (saved during login)
-  const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
-  const isAdmin = userInfo.isAdmin === true || userInfo.role === "admin";
+// --- SECURITY LOGIC ---
+const userInfo = JSON.parse(localStorage.getItem("user") || "{}");
+const isAdmin = userInfo?.role === "admin";
 
   // --- DATABASE LOGIC ---
   const fetchLeads = async () => {

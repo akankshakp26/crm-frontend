@@ -99,6 +99,8 @@ const Dashboard = ({ leads }) => {
   );
 };
 
+
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
   !!localStorage.getItem("token")
@@ -106,17 +108,20 @@ function App() {
 
   const [selectedLead, setSelectedLead] = useState(null);
   const [searchTerm, setSearchTerm] = useState(''); // SEARCH STATE
-  const [user, setUser] = useState({ name: "Akanksha", role: "Frontend Developer", initial: "A" });
-  useEffect(() => {
-  const token = localStorage.getItem("token");
+  const [user, setUser] = useState(null);
+useEffect(() => {
   const storedUser = localStorage.getItem("user");
+  const token = localStorage.getItem("token");
 
   if (token && storedUser) {
     setIsAuthenticated(true);
     setUser(JSON.parse(storedUser));
   }
 }, []);
-
+const handleLogin = (userData) => {
+  setUser(userData);
+  setIsAuthenticated(true);
+};
 const [leads, setLeads] = useState([]);
 useEffect(() => {
   const fetchDashboardData = async () => {
@@ -137,8 +142,8 @@ const handleLogout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
   setIsAuthenticated(false);
+  setUser(null);
 };
-
 
   // Filter leads globally based on the search bar in the header
   const filteredLeads = leads.filter(lead => 
@@ -148,7 +153,14 @@ const handleLogout = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={!isAuthenticated ? <LoginPage onLogin={() => setIsAuthenticated(true)} /> : <Navigate to="/" />} />
+       <Route 
+  path="/login" 
+  element={
+    !isAuthenticated 
+      ? <LoginPage onLogin={handleLogin} /> 
+      : <Navigate to="/" />
+  } 
+/>
         <Route
   path="/*"
   element={
@@ -161,7 +173,17 @@ const handleLogout = () => {
       >
         <Routes>
           <Route path="/" element={<Dashboard leads={filteredLeads} />} />
-          <Route path="/leads" element={<LeadsPage leads={filteredLeads} setLeads={setLeads} setSelectedLead={setSelectedLead} />} />
+          <Route 
+  path="/leads" 
+  element={
+    <LeadsPage
+      leads={filteredLeads}
+      setLeads={setLeads}
+      setSelectedLead={setSelectedLead}
+      user={user}   // 🔥 ADD THIS
+    />
+  }
+/>
           <Route path="/clients" element={<ClientsPage leads={filteredLeads} />} />
           <Route path="/pipeline" element={<Pipeline leads={filteredLeads} setLeads={setLeads} user={user} />} />
           <Route path="/journey" element={<Journey selectedLead={selectedLead} />} />
