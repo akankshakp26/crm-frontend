@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Trash2, AlertTriangle, Loader2, Mail, X, ShieldAlert } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Loader2, X } from "lucide-react";
 
 const LeadsPage = () => {
   const [leads, setLeads] = useState([]);
@@ -10,18 +10,23 @@ const LeadsPage = () => {
 
   const API_URL = "http://localhost:5000/api/leads";
 
+<<<<<<< Updated upstream
 // --- SECURITY LOGIC ---
 const userInfo = JSON.parse(localStorage.getItem("user") || "{}");
 const isAdmin = userInfo?.role === "admin";
 
+=======
+>>>>>>> Stashed changes
   // --- DATABASE LOGIC ---
   const fetchLeads = async () => {
     try {
       const response = await fetch(API_URL);
       const data = await response.json();
+      
+      // Mapping backend 'name' to frontend 'company' to ensure data is seen
       const formatted = data.map(l => ({
         id: l._id,
-        company: l.name,
+        company: l.name, 
         value: l.value || 0,
         status: l.status || "New",
         email: l.email || ""
@@ -53,7 +58,6 @@ const isAdmin = userInfo?.role === "admin";
         body: JSON.stringify(leadData)
       });
       if (response.ok) {
-        // Refresh data WITHOUT window.location.reload() to prevent logout
         await fetchLeads(); 
         setShowAddModal(false);
         setNewLead({ company: "", value: "", email: "" });
@@ -66,7 +70,7 @@ const isAdmin = userInfo?.role === "admin";
   };
 
   const confirmDelete = async () => {
-    const token = localStorage.getItem("token"); // Assuming Harshitha uses JWT
+    const token = localStorage.getItem("token");
     try {
       const response = await fetch(`${API_URL}/${deletingLead.id}`, { 
         method: "DELETE",
@@ -79,7 +83,7 @@ const isAdmin = userInfo?.role === "admin";
         setLeads(leads.filter(l => l.id !== deletingLead.id));
         setDeletingLead(null);
       } else {
-        alert("Access Denied: Only admins can delete data.");
+        alert("Delete failed. Please check your connection.");
       }
     } catch (err) {
       console.error("Delete failed", err);
@@ -93,7 +97,7 @@ const isAdmin = userInfo?.role === "admin";
         <div>
           <h1 className="text-5xl font-black text-slate-900 tracking-tight">Leads</h1>
           <p className="text-slate-400 font-bold text-xs uppercase mt-2 tracking-widest">
-            {isAdmin ? "Admin Access Granted" : "Manager View (Read Only Delete)"}
+            Lead Management Dashboard
           </p>
         </div>
         <button 
@@ -134,19 +138,15 @@ const isAdmin = userInfo?.role === "admin";
                   </td>
                   <td className="p-8 text-right font-black text-slate-900 text-lg">${(lead.value || 0).toLocaleString()}</td>
                   <td className="p-8 text-right">
-                    {isAdmin ? (
+                    <div className="flex justify-end">
+                      {/* Only the Delete button is kept */}
                       <button 
                         onClick={() => setDeletingLead(lead)} 
                         className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                       >
                         <Trash2 size={20} />
                       </button>
-                    ) : (
-                      <div className="flex items-center justify-end gap-2 text-slate-200">
-                        <ShieldAlert size={16} />
-                        <span className="text-[10px] font-black uppercase">Admin Only</span>
-                      </div>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}
