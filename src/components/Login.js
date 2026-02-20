@@ -1,192 +1,193 @@
 import React, { useState } from 'react';
-import axiosInstance from "../api/axiosInstance";
-import { useNavigate } from "react-router-dom";
+import { Mail, Lock, User, Briefcase, Shield } from 'lucide-react';
+import axios from 'axios'; 
+import { useNavigate } from 'react-router-dom';
 
-const LoginPage = ({ onLogin }) => {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [hoveredIcon, setHoveredIcon] = useState(null);
+const LoginPage = () => {
+  // State to control the sliding animation
+  const [isSignUpActive, setIsSignUpActive] = useState(false);
+
+  // States for the forms
+  const [loginRole, setLoginRole] = useState('employee'); // 'employee' or 'admin'
+  const [signupRole, setSignupRole] = useState('employee');
   
-const navigate = useNavigate();
+  const [signInData, setSignInData] = useState({ email: '', password: '' });
+  const [signUpData, setSignUpData] = useState({ name: '', email: '', password: '' });
 
-const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");
-const [error, setError] = useState("");
-const [name, setName] = useState("");
+  const navigate = useNavigate();
 
+  // --- SIGN IN LOGIC ---
+  const handleSignIn = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/login', {
+        email: signInData.email,
+        password: signInData.password,
+        role: loginRole // Sending the toggle choice (admin or employee)
+      });
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  console.log("Form submitted");
-  setError("");
+      // 1. Backend sends back a Token and User Data
+      const { token, user } = response.data;
 
-  try {
+      // 2. Save them to the browser's memory so LeadsPage.jsx can see them
+      localStorage.setItem('token', token);
+      localStorage.setItem('userInfo', JSON.stringify(user));
 
-if (isSignUp) {
-  console.log("ENTERING REGISTER BLOCK");
+      // 3. Success! Send the user to the Leads page
+      console.log("✅ Login Successful!");
+      navigate('/leads');
 
-  await axiosInstance.post("/auth/register", {
-    name,
-    email,
-    password,
-  });
-
-  console.log("REGISTER SUCCESS");
-
-  alert("Registration successful!");
-
-  setName("");
-  setEmail("");
-  setPassword("");
-
-  setIsSignUp(false);
-
-  return;
-}
+    } catch (error) {
+      console.error("❌ Login Failed:", error.response?.data || error.message);
+      alert(error.response?.data?.message || "Invalid credentials. Please try again.");
+    }
+  };
 
 
-    // 🔥 LOGIN
-    const res = await axiosInstance.post("/auth/login", {
-      email,
-      password,
-    });
+  // --- SIGN UP LOGIC ---
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    
+    try {
+      await axios.post('http://localhost:5000/api/auth/register', {
+        name: signUpData.name,
+        email: signUpData.email,
+        password: signUpData.password,
+        role: signupRole // Tell backend if this is an admin or employee account
+      });
 
-    localStorage.setItem("token", res.data.token);
-    localStorage.setItem("user", JSON.stringify(res.data.user));
+      // If successful, show an alert and slide the panel back to Sign In
+      alert("Account created successfully! Please sign in.");
+      setIsSignUpActive(false); 
+      setSignUpData({ name: '', email: '', password: '' }); // Clear the form
 
-    onLogin(res.data.user);
-    navigate("/");
-
-  } catch (err) {
-  console.log("REGISTER ERROR:", err.response?.data);
-  setError(err.response?.data?.message || "Something went wrong");
-}
-
-};
-
-
-  // --- THE NEW MIDNIGHT BLUE BRANDING ---
-  // A deeper, more professional blue gradient
-  const midnightGradient = 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)';
-  const textDark = '#0f172a';
-
-  const socialIconStyle = (id) => ({
-    border: '1.5px solid #e2e8f0',
-    borderRadius: '14px',
-    width: '52px',
-    height: '52px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    fontSize: '18px',
-    fontWeight: '700',
-    // MATCHING LOGIC: Icon hover matches the deep blue panel
-    background: hoveredIcon === id ? midnightGradient : '#fff',
-    color: hoveredIcon === id ? '#fff' : '#64748b',
-    borderColor: hoveredIcon === id ? 'transparent' : '#e2e8f0',
-    boxShadow: hoveredIcon === id ? '0 10px 20px -5px rgba(30, 58, 138, 0.4)' : 'none'
-  });
-
-  const primaryButtonStyle = {
-    borderRadius: '16px',
-    border: 'none',
-    background: midnightGradient, // Tied to the panel color
-    color: '#fff',
-    padding: '16px 52px',
-    cursor: 'pointer',
-    marginTop: '25px',
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: '1px',
-    boxShadow: '0 10px 25px -5px rgba(30, 58, 138, 0.4)'
+    } catch (error) {
+      console.error("❌ Sign Up Failed:", error.response?.data || error.message);
+      alert(error.response?.data?.message || "Could not create account.");
+    }
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f1f5f9' }}>
-      <div style={{ backgroundColor: '#fff', borderRadius: '32px', overflow: 'hidden', width: '850px', minHeight: '520px', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.2)' }}>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
+      {/* Main Container */}
+      <div className="relative overflow-hidden bg-white w-full max-w-[900px] min-h-[600px] rounded-[2rem] shadow-2xl">
         
-        {/* WHITE FORM SIDE */}
-        <div style={{
-  position: 'absolute',
-  top: 0,
-  height: '100%',
-  width: '50%',
-  left: isSignUp ? '50%' : '0',
-  transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-  zIndex: 20
-}}>
-
-          <form style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '0 60px', textAlign: 'center' }} 
-                onSubmit={handleSubmit}>
-            <h1 style={{ margin: 0, fontSize: '32px', fontWeight: '900', color: textDark }}>{isSignUp ? 'Join Valise' : 'Sign In'}</h1>
+        {/* --- SIGN UP FORM CONTAINER --- */}
+        <div className={`absolute top-0 left-0 w-1/2 h-full transition-all duration-700 ease-in-out flex items-center justify-center px-12 ${
+            isSignUpActive ? 'translate-x-full opacity-100 z-50' : 'opacity-0 z-10 pointer-events-none'
+          }`}>
+          <form onSubmit={handleSignUp} className="w-full flex flex-col items-center text-center">
+            <h1 className="text-4xl font-black text-slate-900 mb-6 tracking-tight">Create Account</h1>
             
-            <div style={{ margin: '30px 0', display: 'flex', gap: '15px' }}>
-              {['fb', 'google', 'linkedin'].map((id) => (
-                <div key={id} style={socialIconStyle(id)} onMouseEnter={() => setHoveredIcon(id)} onMouseLeave={() => setHoveredIcon(null)}>
-                  {id === 'fb' ? 'f' : id === 'google' ? 'G' : 'in'}
-                </div>
-              ))}
+            {/* Role Toggle Switch */}
+            <div className="flex bg-slate-100 p-1 rounded-2xl mb-8 w-full shadow-inner">
+              <button type="button" onClick={() => setSignupRole('employee')} className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${signupRole === 'employee' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>
+                <Briefcase size={16} /> Employee
+              </button>
+              <button type="button" onClick={() => setSignupRole('admin')} className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${signupRole === 'admin' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>
+                <Shield size={16} /> Admin
+              </button>
             </div>
-            
-            <span style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '15px', fontWeight: '800', letterSpacing: '1.5px' }}>OR USE YOUR EMAIL</span>
-           {isSignUp && (
-  <input
-    style={inputStyle}
-    type="text"
-    placeholder="Full Name"
-    value={name}
-    onChange={(e) => setName(e.target.value)}
-  />
-)}
 
-              <input
-                style={inputStyle}
-                type="email"
-                placeholder="Email Address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <input
-                style={inputStyle}
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-
-<button
-  style={primaryButtonStyle}
-  type="button"
-  onClick={handleSubmit}
->
-
-{isSignUp ? 'Sign Up' : 'Sign In'}</button>
+            <div className="w-full space-y-4">
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input required type="text" placeholder="Full Name" className="w-full bg-slate-50 border border-slate-100 text-slate-900 text-sm rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 py-4 pl-12 pr-4 font-bold transition-all" value={signUpData.name} onChange={(e) => setSignUpData({...signUpData, name: e.target.value})} />
+              </div>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input required type="email" placeholder="Email Address" className="w-full bg-slate-50 border border-slate-100 text-slate-900 text-sm rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 py-4 pl-12 pr-4 font-bold transition-all" value={signUpData.email} onChange={(e) => setSignUpData({...signUpData, email: e.target.value})} />
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input required type="password" placeholder="Password" className="w-full bg-slate-50 border border-slate-100 text-slate-900 text-sm rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 py-4 pl-12 pr-4 font-bold transition-all" value={signUpData.password} onChange={(e) => setSignUpData({...signUpData, password: e.target.value})} />
+              </div>
+            </div>
+            <button type="submit" className="mt-8 bg-slate-900 text-white font-black uppercase tracking-widest text-sm py-4 px-12 rounded-2xl hover:bg-black transition-all w-full shadow-lg">Sign Up</button>
           </form>
         </div>
 
-        {/* MIDNIGHT BLUE PANEL */}
-        <div style={{ 
-          position: 'absolute', top: 0, height: '100%', width: '50%', 
-          left: isSignUp ? '0' : '50%', transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)', 
-          background: midnightGradient, // FULL PANEL MATCH
-          color: '#fff', display: 'flex', flexDirection: 'column', 
-          alignItems: 'center', justifyContent: 'center', padding: '0 50px', textAlign: 'center' 
-        }}>
-          <h1 style={{ margin: 0, fontSize: '30px', fontWeight: '900' }}>{isSignUp ? 'Welcome Back!' : 'Hello, Friend!'}</h1>
-          <p style={{ margin: '20px 0 35px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.6' }}>{isSignUp ? 'Keep connected with us please login with your info' : 'Enter your details and start your journey with us'}</p>
-          <button onClick={() => setIsSignUp(!isSignUp)} style={{ ...primaryButtonStyle, background: 'transparent', border: '2px solid #fff', boxShadow: 'none' }}>
-            {isSignUp ? 'Sign In' : 'Sign Up'}
-          </button>
+        {/* --- SIGN IN FORM CONTAINER --- */}
+        <div className={`absolute top-0 left-0 w-1/2 h-full transition-all duration-700 ease-in-out flex items-center justify-center px-12 ${
+            isSignUpActive ? '-translate-x-full opacity-0 z-10 pointer-events-none' : 'translate-x-0 opacity-100 z-50'
+          }`}>
+          <form onSubmit={handleSignIn} className="w-full flex flex-col items-center text-center">
+            <h1 className="text-4xl font-black text-slate-900 mb-6 tracking-tight">Sign In</h1>
+            
+            {/* Role Toggle Switch */}
+            <div className="flex bg-slate-100 p-1 rounded-2xl mb-8 w-full shadow-inner">
+              <button type="button" onClick={() => setLoginRole('employee')} className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${loginRole === 'employee' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>
+                <Briefcase size={16} /> Employee
+              </button>
+              <button type="button" onClick={() => setLoginRole('admin')} className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${loginRole === 'admin' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>
+                <Shield size={16} /> Admin
+              </button>
+            </div>
+
+            <div className="w-full space-y-4">
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input required type="email" placeholder="Email Address" className="w-full bg-slate-50 border border-slate-100 text-slate-900 text-sm rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 py-4 pl-12 pr-4 font-bold transition-all" value={signInData.email} onChange={(e) => setSignInData({...signInData, email: e.target.value})} />
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input required type="password" placeholder="Password" className="w-full bg-slate-50 border border-slate-100 text-slate-900 text-sm rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 py-4 pl-12 pr-4 font-bold transition-all" value={signInData.password} onChange={(e) => setSignInData({...signInData, password: e.target.value})} />
+              </div>
+            </div>
+            
+            <a href="#" className="text-slate-400 font-bold text-sm mt-4 hover:text-indigo-600 transition-colors">Forgot your password?</a>
+            <button type="submit" className="mt-8 bg-indigo-600 text-white font-black uppercase tracking-widest text-sm py-4 px-12 rounded-2xl hover:bg-indigo-700 transition-all w-full shadow-lg shadow-indigo-200">Sign In</button>
+          </form>
+        </div>
+
+        {/* --- OVERLAY CONTAINER (The part that slides) --- */}
+        <div className={`absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-in-out z-[100] ${
+            isSignUpActive ? '-translate-x-full' : 'translate-x-0'
+          }`}>
+          
+          <div className={`bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-800 relative -left-full h-full w-[200%] transition-transform duration-700 ease-in-out text-white ${
+              isSignUpActive ? 'translate-x-1/2' : 'translate-x-0'
+            }`}>
+            
+            {/* Left Overlay (Shows when moving to Sign In) */}
+            <div className={`absolute top-0 left-0 flex flex-col items-center justify-center w-1/2 h-full px-12 text-center transition-transform duration-700 ease-in-out ${
+                isSignUpActive ? 'translate-x-0' : '-translate-x-[20%]'
+              }`}>
+              <h2 className="text-4xl font-black mb-6 tracking-tight text-white">Welcome Back!</h2>
+              <p className="text-indigo-100 font-medium text-sm leading-relaxed mb-10 px-4">
+                To keep connected with us please login with your personal info and role.
+              </p>
+              <button 
+                onClick={() => setIsSignUpActive(false)} 
+                className="bg-transparent border-2 border-white text-white font-black uppercase tracking-widest text-sm py-3 px-12 rounded-2xl hover:bg-white hover:text-indigo-600 transition-all shadow-lg"
+              >
+                Sign In
+              </button>
+            </div>
+
+            {/* Right Overlay (Shows when moving to Sign Up) */}
+            <div className={`absolute top-0 right-0 flex flex-col items-center justify-center w-1/2 h-full px-12 text-center transition-transform duration-700 ease-in-out ${
+                isSignUpActive ? 'translate-x-[20%]' : 'translate-x-0'
+              }`}>
+              <h2 className="text-4xl font-black mb-6 tracking-tight text-white">Hello, Friend!</h2>
+              <p className="text-indigo-100 font-medium text-sm leading-relaxed mb-10 px-4">
+                Enter your personal details and select your role to start your journey with us.
+              </p>
+              <button 
+                onClick={() => setIsSignUpActive(true)} 
+                className="bg-transparent border-2 border-white text-white font-black uppercase tracking-widest text-sm py-3 px-12 rounded-2xl hover:bg-white hover:text-indigo-600 transition-all shadow-lg"
+              >
+                Sign Up
+              </button>
+            </div>
+            
+          </div>
         </div>
 
       </div>
     </div>
   );
 };
-
-const inputStyle = { backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', padding: '15px 20px', margin: '10px 0', width: '100%', borderRadius: '14px', outline: 'none', fontSize: '14px' };
-
-
 
 export default LoginPage;
