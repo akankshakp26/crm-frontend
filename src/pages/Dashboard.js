@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from "../api/axiosInstance"; // 🔥 Using Harshitha's secure axios
 import InteractionLogs from '../components/InteractionLogs';
 import RecentActivity from '../components/RecentActivity';
 
 const Dashboard = () => {
-  // 1. Create state to hold the data from the backend
+  // 1. Create state to hold the data from the backend (Your code)
   const [stats, setStats] = useState({
     totalLeads: 0,
     totalClients: 0,
@@ -12,20 +12,26 @@ const Dashboard = () => {
     avgRevenue: 0,
     conversionRate: "0%"
   });
+  const [loading, setLoading] = useState(true);
 
   // 2. Fetch the data when the page loads
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/dashboard/stats');
+        // 🔥 Using the secure instance to fetch your stats
+        const response = await axiosInstance.get('/dashboard/stats');
         setStats(response.data);
       } catch (error) {
         console.error("Error fetching live stats:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchDashboardStats();
   }, []);
+
+  if (loading) return <p className="p-8 font-bold text-slate-500">Loading live stats...</p>;
 
   return (
     <div className="p-8 animate-in fade-in duration-700">

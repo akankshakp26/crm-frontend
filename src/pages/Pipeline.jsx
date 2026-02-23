@@ -1,154 +1,167 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, X, TrendingUp, Zap, Trophy } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { 
+  Search, 
+  Filter, 
+  MoreHorizontal, 
+  Plus, 
+  ChevronRight,
+  Loader2
+} from "lucide-react";
 
-const Pipeline = ({ leads, setLeads, user }) => {
-  const [showForm, setShowForm] = useState(false);
-  const [toast, setToast] = useState(null);
-  const [newDeal, setNewDeal] = useState({ company: '', value: '' });
-  const [draggingId, setDraggingId] = useState(null);
-  const stages = ['Discovery', 'Proposal', 'Negotiation', 'Closed Won'];
+const Pipeline = () => {
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const API_URL = "http://localhost:5000/api/leads";
 
+  // Mapping backend 'status' enum to Pipeline column titles
+  const columns = [
+    { id: "New", title: "Discovery", color: "bg-blue-500" },
+    { id: "Contacted", title: "Contacted", color: "bg-purple-500" },
+    { id: "Qualified", title: "Qualified", color: "bg-emerald-500" },
+    { id: "Lost", title: "Lost", color: "bg-slate-400" },
+  ];
 
-useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
+  // 1. Fetch live data from the backend
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        
+        // Map backend fields to frontend expected names
+        const formattedData = data.map(lead => ({
+          id: lead._id,
+          company: lead.name, // backend 'name' -> frontend 'company'
+          value: lead.value || 0,
+          status: lead.status || "New",
+        }));
+        
+        setLeads(formattedData);
+      } catch (error) {
+        console.error("Pipeline fetch failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const getStageTotal = (stageName) => {
-    return leads
-      .filter(l => l.stage === stageName)
-      .reduce((sum, lead) => sum + (Number(lead.value) || 0), 0);
-  };
-
-  const funnelTotal = leads.reduce((sum, l) => sum + (Number(l.value) || 0), 0);
-  const targetAmount = 100000; 
-  const progressPercent = Math.min((getStageTotal('Closed Won') / targetAmount) * 100, 100);
-
-  const onDragStart = (e, id) => {
-    e.dataTransfer.setData("id", id);
-    setDraggingId(id);
-  };
+    fetchLeads();
+  }, []);
 
   const onDragOver = (e) => e.preventDefault();
-  
-  const onDrop = (e, targetStage) => {
-    const id = e.dataTransfer.getData("id");
-    const leadToUpdate = leads.find(l => l.id.toString() === id);
 
-    if (targetStage === 'Closed Won' && leadToUpdate.stage !== 'Closed Won') {
-      setToast({ company: leadToUpdate.company, value: leadToUpdate.value });
+  // 2. Save the new status to MongoDB when a card is dropped
+  const onDrop = async (e, newStatus) => {
+    const leadId = e.dataTransfer.getData("leadId");
+    
+    try {
+      const response = await fetch(`${API_URL}/${leadId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (response.ok) {
+        // Update local state so the UI reflects the change immediately
+        setLeads(prevLeads => 
+          prevLeads.map(l => l.id === leadId ? { ...l, status: newStatus } : l)
+        );
+      }
+    } catch (error) {
+      console.error("Failed to update lead status:", error);
     }
-
-    setLeads(leads.map(l => l.id.toString() === id ? { ...l, stage: targetStage } : l));
-    setDraggingId(null);
   };
 
-  const handleAddDeal = (e) => {
-    e.preventDefault();
-    if (!newDeal.company || !newDeal.value) return;
-    setLeads([...leads, { id: Date.now(), company: newDeal.company, value: parseInt(newDeal.value), stage: 'Discovery', status: 'New' }]);
-    setShowForm(false);
-    setNewDeal({ company: '', value: '' });
-  };
+  if (loading) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4">
+        <Loader2 className="animate-spin" size={40} />
+        <p className="font-black uppercase tracking-widest text-xs">Syncing Pipeline with Database...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 text-left min-h-screen relative">
-      <style>{`
-        .dragging-pulse { animation: pulse 1.5s infinite; opacity: 0.5; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 #2563eb; } 70% { box-shadow: 0 0 0 10px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-      `}</style>
-
-      {/* HEADER */}
-      <div className="flex justify-between items-end mb-10">
+    <div className="h-full flex flex-col p-6 overflow-hidden text-left">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Sales Pipeline</h1>
-          <p className="font-black text-xs mt-2 uppercase tracking-widest flex items-center gap-2 text-blue-600">
-            <TrendingUp size={14} /> Total Value: ${funnelTotal.toLocaleString()}
-          </p>
+          <h1 className="text-3xl font-black text-slate-900 mb-2">Sales Pipeline</h1>
+          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Drag cards to update lead status</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="bg-slate-900 text-white px-8 py-3.5 rounded-2xl font-black flex items-center gap-3 hover:scale-105 transition-all shadow-xl active:scale-95">
-          <Plus size={20} /> NEW DEAL
-        </button>
-      </div>
-
-      {/* TARGET BAR */}
-      <div className="mb-14 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
-        <div className="flex justify-between items-end mb-4 relative z-10">
-          <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Zap size={14} className="text-amber-500" /> Monthly Target Revenue</p>
-            <p className="text-2xl font-black text-slate-900 mt-1">${getStageTotal('Closed Won').toLocaleString()} <span className="text-slate-200 font-medium">/ ${targetAmount.toLocaleString()}</span></p>
+        
+        <div className="flex gap-3">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search leads..."
+              className="pl-12 pr-6 py-3 bg-white border border-slate-100 rounded-2xl outline-none w-64 font-bold"
+            />
           </div>
-          <p className="text-sm font-black px-3 py-1 rounded-lg bg-blue-50 text-blue-600">{Math.round(progressPercent)}% Achieved</p>
-        </div>
-        <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden">
-          <div className="h-full rounded-full transition-all duration-1000 ease-out bg-blue-600" style={{ width: `${progressPercent}%` }} />
+          <button className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-600 hover:bg-slate-50 transition">
+            <Filter size={20} />
+          </button>
         </div>
       </div>
 
-      {/* KANBAN BOARD */}
-      <div className="flex gap-10 overflow-x-auto pb-10 no-scrollbar">
-        {stages.map((stage) => {
-          const total = getStageTotal(stage);
-          return (
-            <div key={stage} className="flex-shrink-0 w-80" onDragOver={onDragOver} onDrop={e => onDrop(e, stage)}>
-              <div className="mb-10 px-4 text-left">
-                <h3 className="font-black text-slate-400 uppercase text-[10px] tracking-widest leading-none">{stage}</h3>
-                <p className="font-black text-xl mt-2 text-blue-600">${total.toLocaleString()}</p>
-              </div>
-              <div className="space-y-6 min-h-[600px] bg-slate-50/30 rounded-[3.5rem] p-3 border border-slate-100/50">
-                {leads.filter(l => l.stage === stage).map((lead) => (
-                  <div key={lead.id} draggable onDragStart={e => onDragStart(e, lead.id)} onDragEnd={() => setDraggingId(null)} className={`bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm cursor-grab hover:shadow-xl transition-all active:scale-95 group ${draggingId === lead.id ? 'dragging-pulse' : ''}`}>
-                    <h4 className="font-black text-slate-800 text-base mb-6 text-left">{lead.company}</h4>
-                    <div className="flex justify-between items-end">
-                      <p className="text-xl font-black text-slate-900">${(Number(lead.value) || 0).toLocaleString()}</p>
-                      <div className="h-8 w-8 rounded-full flex items-center justify-center text-[9px] font-black text-white shadow-md flex-shrink-0 bg-blue-600">{user?.initial || 'A'}</div>
-                    </div>
-                  </div>
-                ))}
+      <div className="flex gap-6 h-full overflow-x-auto pb-6">
+        {columns.map((column) => (
+          <div 
+            key={column.id}
+            onDragOver={onDragOver}
+            onDrop={(e) => onDrop(e, column.id)}
+            className="flex-shrink-0 w-80 flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-4 px-2">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${column.color}`} />
+                <h3 className="font-black text-slate-900 uppercase text-xs tracking-widest">
+                  {column.title}
+                </h3>
+                <span className="ml-2 px-2 py-0.5 bg-slate-900 text-white rounded-md text-[10px] font-black">
+                  {leads.filter(l => l.status === column.id).length}
+                </span>
               </div>
             </div>
-          );
-        })}
-      </div>
 
-      {/* TOAST */}
-     {toast && (
-        <div className="fixed bottom-10 right-10 z-[150] animate-in slide-in-from-bottom-10 fade-in duration-300">
-          <div className="bg-slate-900 text-white p-6 rounded-[2.5rem] shadow-2xl border border-white/10 flex items-center gap-5 min-w-[350px]">
-            <div className="h-14 w-14 bg-emerald-500 rounded-3xl flex items-center justify-center text-white shadow-lg">
-              <Trophy size={28} />
+            <div className="bg-slate-50/50 rounded-[2.5rem] p-4 flex-grow border-2 border-dashed border-slate-200/60 min-h-[400px]">
+              <div className="space-y-4">
+                {leads.filter((l) => l.status === column.id).length === 0 ? (
+                  <p className="text-center text-slate-300 py-10 text-xs font-bold uppercase tracking-tighter">No leads here</p>
+                ) : (
+                  leads
+                    .filter((lead) => lead.status === column.id)
+                    .map((lead) => (
+                      <div
+                        key={lead.id}
+                        draggable
+                        onDragStart={(e) => e.dataTransfer.setData("leadId", lead.id)}
+                        className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 cursor-grab active:cursor-grabbing hover:shadow-xl hover:-translate-y-1 transition-all group"
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <h4 className="font-black text-slate-900 group-hover:text-blue-600 transition-colors">
+                            {lead.company}
+                          </h4>
+                          <button className="text-slate-300 hover:text-slate-900 transition-colors">
+                            <MoreHorizontal size={18} />
+                          </button>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="text-xl font-black text-slate-900">
+                            ${lead.value.toLocaleString()}
+                          </div>
+                          <div className="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                            <ChevronRight size={16} />
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
             </div>
-            <div className="flex-1 pr-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Success!</p>
-              <h4 className="font-black text-sm mt-0.5">{toast.company} WON</h4>
-              <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">+ ${toast.value.toLocaleString()}</p>
-            </div>
-            <button onClick={() => setToast(null)} className="text-slate-500 hover:text-white"><X size={20} /></button>
           </div>
-        </div>
-      )}
-      {showForm && (
-        <div className="fixed inset-0 z-[100] ...">
-        </div>
-      )}
-
-      {/* MODAL */}
-      {showForm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <form onSubmit={handleAddDeal} className="bg-white rounded-[3rem] p-12 max-w-md w-full shadow-2xl relative text-left">
-            <button type="button" onClick={() => setShowForm(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900"><X size={24} /></button>
-            <h2 className="text-3xl font-black text-slate-900 mb-8 tracking-tight">Create New Deal</h2>
-            <div className="space-y-6">
-              <input className="w-full p-5 bg-slate-50 rounded-2xl border-none outline-none font-black focus:ring-2 focus:ring-blue-600 text-left" placeholder="Company Name" value={newDeal.company} onChange={(e) => setNewDeal({...newDeal, company: e.target.value})} />
-              <input className="w-full p-5 bg-slate-50 rounded-2xl border-none outline-none font-black focus:ring-2 focus:ring-blue-600 text-left" type="number" placeholder="Value" value={newDeal.value} onChange={(e) => setNewDeal({...newDeal, value: e.target.value})} />
-            </div>
-            <button type="submit" className="w-full mt-10 py-5 bg-slate-900 text-white rounded-2xl font-black text-lg">Create Deal</button>
-          </form>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 };

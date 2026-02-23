@@ -1,252 +1,198 @@
 import React, { useEffect, useState } from "react";
-import {
-  Plus,
-  X,
-  ChevronRight,
-  Edit2,
-  Trash2,
-  AlertTriangle,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { getLeads, setLeads as saveLeads } from "../utils/crmStore";
+import { Plus, Trash2, AlertTriangle, Loader2, X } from "lucide-react";
 
-const LeadsPage = ({ leads: leadsProp, setLeads: setLeadsProp, setSelectedLead }) => {
-  const navigate = useNavigate();
-
-  const [localLeads, setLocalLeads] = useState([]);
-  const leads = leadsProp ?? localLeads;
-  const setLeads = setLeadsProp ?? setLocalLeads;
-
+const LeadsPage = () => {
+  const [leads, setLeads] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingLead, setEditingLead] = useState(null);
+  const [newLead, setNewLead] = useState({ company: "", value: "", email: "" });
   const [deletingLead, setDeletingLead] = useState(null);
-  const [newLead, setNewLead] = useState({ company: "", value: "" });
 
-  useEffect(() => {
-    if (leadsProp === undefined) {
-      setLocalLeads(getLeads());
+  const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+const isAdmin = storedUser.role === "admin";
+
+  const API_URL = "http://localhost:5000/api/leads";
+
+  // --- DATABASE LOGIC ---
+  const fetchLeads = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      
+      // Mapping backend 'name' to frontend 'company' to ensure data is seen
+      const formatted = data.map(l => ({
+        id: l._id,
+        company: l.name, 
+        value: l.value || 0,
+        status: l.status || "New",
+        email: l.email || ""
+      }));
+      setLeads(formatted);
+    } catch (err) {
+      console.error("Database fetch failed", err);
+    } finally {
+      setIsLoading(false);
     }
-  }, [leadsProp]);
-
-  useEffect(() => {
-    if (leadsProp === undefined) {
-      saveLeads(leads);
-    }
-  }, [leads, leadsProp]);
-
-  const handleLeadClick = (lead) => {
-    setSelectedLead?.(lead);
-    navigate("/journey");
   };
 
-  const handleAddLead = (e) => {
-    e.preventDefault();
-    if (!newLead.company || !newLead.value) return;
+  useEffect(() => {
+    fetchLeads();
+  }, []);
 
-    const entry = {
-      id: Date.now(),
-      company: newLead.company,
-      value: parseInt(newLead.value),
-      stage: "Discovery",
-      status: "New",
+  const handleAddLead = async (e) => {
+    e.preventDefault();
+    const leadData = { 
+      name: newLead.company, 
+      email: newLead.email, 
+      value: parseInt(newLead.value) || 0 
     };
 
-    setLeads([...leads, entry]);
-    setShowAddModal(false);
-    setNewLead({ company: "", value: "" });
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(leadData)
+      });
+      if (response.ok) {
+        await fetchLeads(); 
+        setShowAddModal(false);
+        setNewLead({ company: "", value: "", email: "" });
+      } else {
+        alert("Check your fields. Backend requires a unique email.");
+      }
+    } catch (error) {
+      console.error("Add lead failed", error);
+    }
   };
 
-  const confirmDelete = () => {
-    setLeads(leads.filter((l) => l.id !== deletingLead.id));
-    setDeletingLead(null);
-  };
-
-  const handleEditSave = (e) => {
-    e.preventDefault();
-    setLeads(leads.map((l) => (l.id === editingLead.id ? editingLead : l)));
-    setEditingLead(null);
-  };
-
-  const handleConvert = (id) => {
-    setLeads(
-      leads.map((l) =>
-        l.id === id ? { ...l, stage: "Closed Won", status: "Converted" } : l
-      )
-    );
+  const confirmDelete = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`${API_URL}/${deletingLead.id}`, { 
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        setLeads(leads.filter(l => l.id !== deletingLead.id));
+        setDeletingLead(null);
+      } else {
+        alert("Delete failed. Please check your connection.");
+      }
+    } catch (err) {
+      console.error("Delete failed", err);
+    }
   };
 
   return (
-    <div className="relative p-4 text-left">
-
+    <div className="p-8 text-left bg-white min-h-screen">
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-10">
-        <h1 className="text-4xl font-black text-slate-900">
-          Lead Management
-        </h1>
-
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-slate-900 text-white px-8 py-3.5 rounded-2xl font-black flex items-center gap-2 hover:scale-105 transition"
+      <div className="flex justify-between items-center mb-12">
+        <div>
+          <h1 className="text-5xl font-black text-slate-900 tracking-tight">Leads</h1>
+          <p className="text-slate-400 font-bold text-xs uppercase mt-2 tracking-widest">
+            Lead Management Dashboard
+          </p>
+        </div>
+        <button 
+          onClick={() => setShowAddModal(true)} 
+          className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black flex items-center gap-3 hover:bg-black transition-all shadow-lg shadow-slate-200 active:scale-95"
         >
-          <Plus size={20} /> Add New Lead
+          <Plus size={24} /> Add New Lead
         </button>
       </div>
 
       {/* TABLE */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="p-6 text-xs font-black text-slate-400 uppercase">
-                Company
-              </th>
-              <th className="p-6 text-xs font-black text-slate-400 text-center uppercase">
-                Status
-              </th>
-              <th className="p-6 text-xs font-black text-slate-400 text-right uppercase">
-                Value
-              </th>
-              <th className="p-6 text-xs font-black text-slate-400 text-right uppercase">
-                Convert
-              </th>
-              <th className="p-6 text-xs font-black text-slate-400 text-right uppercase">
-                Actions
-              </th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-slate-100">
-            {leads.map((lead) => (
-              <tr key={lead.id}>
-                <td className="p-6">
-                  <button
-                    onClick={() => handleLeadClick(lead)}
-                    className="flex items-center gap-2 font-black text-slate-800"
-                  >
-                    {lead.company}
-                    <ChevronRight size={14} />
-                  </button>
-                </td>
-
-                <td className="p-6 text-center">
-                  <span className="px-3 py-1 rounded-lg text-xs font-black bg-blue-100 text-blue-700">
-                    {lead.status}
-                  </span>
-                </td>
-
-                <td className="p-6 text-right font-black">
-                  ${(lead.value || 0).toLocaleString()}
-                </td>
-
-                <td className="p-6 text-right">
-                  <button
-                    onClick={() => handleConvert(lead.id)}
-                    className="px-5 py-2 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition"
-                  >
-                    Convert
-                  </button>
-                </td>
-
-                <td className="p-6 text-right">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => setEditingLead(lead)}
-                      className="p-2 text-slate-400 hover:text-blue-600"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-
-                    <button
-                      onClick={() => setDeletingLead(lead)}
-                      className="p-2 text-slate-400 hover:text-red-500"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </td>
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-100/50 overflow-hidden">
+        {isLoading ? (
+          <div className="p-32 flex flex-col items-center gap-6 text-slate-400">
+            <Loader2 className="animate-spin" size={48} />
+            <p className="font-black uppercase tracking-[0.3em] text-[10px]">Syncing Leads Database</p>
+          </div>
+        ) : (
+          <table className="w-full text-left">
+            <thead className="bg-slate-50/50 border-b border-slate-50">
+              <tr>
+                <th className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Company</th>
+                <th className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Contact Email</th>
+                <th className="p-8 text-[10px] font-black text-slate-400 text-center uppercase tracking-[0.2em]">Status</th>
+                <th className="p-8 text-[10px] font-black text-slate-400 text-right uppercase tracking-[0.2em]">Value</th>
+               {isAdmin && (
+  <th className="p-8 text-[10px] font-black text-slate-400 text-right uppercase tracking-[0.2em]">
+    Actions
+  </th>
+)}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {leads.map((lead) => (
+                <tr key={lead.id} className="hover:bg-slate-50/30 transition-colors group">
+                  <td className="p-8 font-black text-slate-900 text-lg">{lead.company}</td>
+                  <td className="p-8 text-slate-500 font-bold text-sm">{lead.email}</td>
+                  <td className="p-8 text-center">
+                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${lead.status === 'Qualified' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                      {lead.status}
+                    </span>
+                  </td>
+                  <td className="p-8 text-right font-black text-slate-900 text-lg">${(lead.value || 0).toLocaleString()}</td>
+                  {isAdmin && (
+  <td className="p-8 text-right">
+    <div className="flex justify-end">
+      <button 
+        onClick={() => setDeletingLead(lead)} 
+        className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+      >
+        <Trash2 size={20} />
+      </button>
+    </div>
+  </td>
+)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* DELETE POPUP */}
-      {deletingLead && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white rounded-3xl p-10 max-w-sm w-full shadow-2xl text-center">
-            <div className="h-20 w-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-              <AlertTriangle size={40} />
+      {/* --- MODAL: ADD LEAD --- */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md">
+          <form onSubmit={handleAddLead} className="bg-white rounded-[3rem] p-16 max-w-md w-full relative shadow-2xl border border-slate-100">
+            <button type="button" onClick={() => setShowAddModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X size={24}/></button>
+            <h2 className="text-4xl font-black mb-10 text-slate-900 tracking-tight">New Lead</h2>
+            <div className="space-y-6">
+              <input required className="w-full p-6 bg-slate-50 rounded-2xl outline-none font-bold text-slate-900 focus:ring-2 ring-slate-200 transition" placeholder="Company Name" value={newLead.company} onChange={(e) => setNewLead({ ...newLead, company: e.target.value })} />
+              <input required className="w-full p-6 bg-slate-50 rounded-2xl outline-none font-bold text-slate-900 focus:ring-2 ring-slate-200 transition" placeholder="Email Address" type="email" value={newLead.email} onChange={(e) => setNewLead({ ...newLead, email: e.target.value })} />
+              <input required className="w-full p-6 bg-slate-50 rounded-2xl outline-none font-bold text-slate-900 focus:ring-2 ring-slate-200 transition" placeholder="Value ($)" type="number" value={newLead.value} onChange={(e) => setNewLead({ ...newLead, value: e.target.value })} />
             </div>
-
-            <h2 className="text-2xl font-black text-slate-900 mb-2">
-              Delete Lead?
-            </h2>
-
-            <p className="text-slate-500 text-sm font-medium mb-8">
-              Are you sure you want to remove{" "}
-              <span className="font-bold text-slate-900">
-                {deletingLead.company}
-              </span>?
-            </p>
-
-            <div className="flex gap-4">
-              <button
-                onClick={() => setDeletingLead(null)}
-                className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 transition"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={confirmDelete}
-                className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-black hover:bg-red-600 transition"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+            <button type="submit" className="w-full mt-12 py-6 bg-slate-900 text-white rounded-[2rem] font-black text-xl hover:bg-black transition-all shadow-xl shadow-slate-200">Create Lead</button>
+          </form>
         </div>
       )}
 
-      {/* ADD MODAL */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <form
-            onSubmit={handleAddLead}
-            className="bg-white rounded-3xl p-12 max-w-md w-full shadow-2xl"
-          >
-            <h2 className="text-3xl font-black text-slate-900 mb-8">
-              New Lead
-            </h2>
-
-            <div className="space-y-4">
-              <input
-                className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-black"
-                placeholder="Company Name"
-                value={newLead.company}
-                onChange={(e) =>
-                  setNewLead({ ...newLead, company: e.target.value })
-                }
-              />
-
-              <input
-                className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-black"
-                placeholder="Value"
-                type="number"
-                value={newLead.value}
-                onChange={(e) =>
-                  setNewLead({ ...newLead, value: e.target.value })
-                }
-              />
+      {/* --- MODAL: DELETE CONFIRMATION --- */}
+      {deletingLead && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-xl">
+          <div className="bg-white rounded-[3.5rem] p-14 text-center shadow-2xl max-w-sm w-full mx-4 border border-slate-100">
+            <div className="w-24 h-24 bg-red-50 text-red-500 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 animate-pulse">
+              <AlertTriangle size={48} />
             </div>
-
-            <button
-              type="submit"
-              className="w-full mt-8 py-5 bg-slate-900 text-white rounded-2xl font-black"
-            >
-              Create Lead
-            </button>
-          </form>
+            <h2 className="text-3xl font-black mb-4 text-slate-900 tracking-tight">Delete Lead?</h2>
+            <p className="text-slate-500 font-bold mb-10 leading-relaxed">
+              Confirm removal of <br/>
+              <span className="text-slate-900 px-3 py-1 bg-slate-50 rounded-lg">{deletingLead.company}</span>
+            </p>
+            <div className="flex flex-col gap-3">
+              <button onClick={confirmDelete} className="w-full py-5 bg-red-500 text-white rounded-2xl font-black text-lg hover:bg-red-600 transition-all shadow-lg shadow-red-100">
+                Confirm Delete
+              </button>
+              <button onClick={() => setDeletingLead(null)} className="w-full py-5 bg-white text-slate-400 rounded-2xl font-black text-lg hover:text-slate-900 transition-all">
+                Keep Lead
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
