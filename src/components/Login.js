@@ -11,46 +11,69 @@ const LoginPage = ({ onLogin }) => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState("sales"); // Default to 'sales' per backend enum
+  const [loginType, setLoginType] = useState("sales"); 
+// "employee" or "admin"
   const [error, setError] = useState("");
 
- const handleSubmit = async (e) => {
-  if (e) e.preventDefault(); // Stop page reload
+const handleSubmit = async (e) => {
+  if (e) e.preventDefault();
   setError("");
 
   try {
-  if (isSignUp) {
-    // We MUST send the role 'admin' or 'sales' to the backend
-    await axiosInstance.post("/auth/register", {
-      name,
+    // ---------------- REGISTER ----------------
+    if (isSignUp) {
+      await axiosInstance.post("/auth/register", {
+        name,
+        email,
+        password,
+        role // send selected role
+      });
+
+      alert("Registration successful!");
+      setIsSignUp(false);
+      return;
+    }
+
+    // ---------------- LOGIN ----------------
+    const res = await axiosInstance.post("/auth/login", {
       email,
       password,
-      role: "admin" // Hardcode this to 'admin' for now so you can log in
     });
 
-    alert("Registration successful!");
-    setIsSignUp(false);
-    return;
+    const loggedUser = res.data.user;
+
+    // Role-based login restriction
+    if (loginType === "admin" && loggedUser.role !== "admin") {
+      setError("Access denied: Admin account required");
+      return;
+    }
+
+    if (loginType === "sales" && loggedUser.role === "admin") {
+      setError("Access denied: Employee login only");
+      return;
+    }
+
+    localStorage.setItem("token", res.data.token);
+    localStorage.setItem("user", JSON.stringify(loggedUser));
+
+    onLogin(loggedUser);
+    navigate("/");
+
+  } catch (err) {
+    console.log("AUTH ERROR:", err.response?.data);
+    setError(err.response?.data?.message || "Something went wrong");
   }
-
-  // --- LOGIN BLOCK ---
-  const res = await axiosInstance.post("/auth/login", { email, password });
-  localStorage.setItem("token", res.data.token);
-  localStorage.setItem("user", JSON.stringify(res.data.user));
-
-  onLogin(res.data.user);
-  navigate("/");
-
-} catch (err) {
-  console.log("AUTH ERROR:", err.response?.data);
-  setError(err.response?.data?.message || "Something went wrong");
-}
- };
+};
 
   // --- STYLING ---
   const midnightGradient = 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)';
   const textDark = '#0f172a';
 
-  const roleButtonStyle = (id) => ({
+
+  const roleButtonStyle = (id) => {
+  const activeValue = isSignUp ? role : loginType;
+
+  return {
     flex: 1,
     padding: '12px',
     borderRadius: '14px',
@@ -59,10 +82,13 @@ const LoginPage = ({ onLogin }) => {
     fontWeight: '800',
     fontSize: '13px',
     transition: 'all 0.3s ease',
-    background: role === id ? midnightGradient : '#f1f5f9',
-    color: role === id ? '#fff' : '#94a3b8',
-    boxShadow: role === id ? '0 4px 12px rgba(30, 58, 138, 0.2)' : 'none'
-  });
+    background: activeValue === id ? midnightGradient : '#f1f5f9',
+    color: activeValue === id ? '#fff' : '#94a3b8',
+    boxShadow: activeValue === id
+      ? '0 4px 12px rgba(30, 58, 138, 0.2)'
+      : 'none'
+  };
+};
 
   const primaryButtonStyle = {
     borderRadius: '16px',
@@ -95,8 +121,33 @@ const LoginPage = ({ onLogin }) => {
             
             {/* ROLE SELECTOR */}
             <div style={{ display: 'flex', width: '100%', gap: '12px', marginBottom: '20px' }}>
-              <button type="button" onClick={() => setRole('sales')} style={roleButtonStyle('sales')}>Employee</button>
-              <button type="button" onClick={() => setRole('admin')} style={roleButtonStyle('admin')}>Admin</button>
+<button
+  type="button"
+  onClick={() => {
+    if (isSignUp) {
+      setRole("sales");
+    } else {
+      setLoginType("sales");
+    }
+  }}
+  style={roleButtonStyle("sales")}
+>
+  Employee
+</button>
+
+<button
+  type="button"
+  onClick={() => {
+    if (isSignUp) {
+      setRole("admin");
+    } else {
+      setLoginType("admin");
+    }
+  }}
+  style={roleButtonStyle("admin")}
+>
+  Admin
+</button>
             </div>
 
             {error && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: '700', marginBottom: '10px' }}>{error}</p>}
@@ -104,6 +155,7 @@ const LoginPage = ({ onLogin }) => {
             {isSignUp && (
               <input style={inputStyle} type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} />
             )}
+            
             <input style={inputStyle} type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} />
             <input style={inputStyle} type="password" placeholder="Password (Min 6 chars)" value={password} onChange={(e) => setPassword(e.target.value)} />
 

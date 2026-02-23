@@ -11,8 +11,8 @@ const LeadsPage = () => {
   const [value, setValue] = useState("");
   const [stage, setStage] = useState("Discovery");
 
-  const user = JSON.parse(localStorage.getItem("user"));
-
+const user = JSON.parse(localStorage.getItem("user") || "{}");
+const isAdmin = user.role === "admin";
   // 🔹 Fetch leads
   useEffect(() => {
     const fetchLeads = async () => {

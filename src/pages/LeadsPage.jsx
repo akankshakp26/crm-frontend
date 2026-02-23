@@ -8,15 +8,11 @@ const LeadsPage = () => {
   const [newLead, setNewLead] = useState({ company: "", value: "", email: "" });
   const [deletingLead, setDeletingLead] = useState(null);
 
+  const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+const isAdmin = storedUser.role === "admin";
+
   const API_URL = "http://localhost:5000/api/leads";
 
-<<<<<<< Updated upstream
-// --- SECURITY LOGIC ---
-const userInfo = JSON.parse(localStorage.getItem("user") || "{}");
-const isAdmin = userInfo?.role === "admin";
-
-=======
->>>>>>> Stashed changes
   // --- DATABASE LOGIC ---
   const fetchLeads = async () => {
     try {
@@ -123,7 +119,11 @@ const isAdmin = userInfo?.role === "admin";
                 <th className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Contact Email</th>
                 <th className="p-8 text-[10px] font-black text-slate-400 text-center uppercase tracking-[0.2em]">Status</th>
                 <th className="p-8 text-[10px] font-black text-slate-400 text-right uppercase tracking-[0.2em]">Value</th>
-                <th className="p-8 text-[10px] font-black text-slate-400 text-right uppercase tracking-[0.2em]">Actions</th>
+               {isAdmin && (
+  <th className="p-8 text-[10px] font-black text-slate-400 text-right uppercase tracking-[0.2em]">
+    Actions
+  </th>
+)}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -137,17 +137,18 @@ const isAdmin = userInfo?.role === "admin";
                     </span>
                   </td>
                   <td className="p-8 text-right font-black text-slate-900 text-lg">${(lead.value || 0).toLocaleString()}</td>
-                  <td className="p-8 text-right">
-                    <div className="flex justify-end">
-                      {/* Only the Delete button is kept */}
-                      <button 
-                        onClick={() => setDeletingLead(lead)} 
-                        className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                      >
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
-                  </td>
+                  {isAdmin && (
+  <td className="p-8 text-right">
+    <div className="flex justify-end">
+      <button 
+        onClick={() => setDeletingLead(lead)} 
+        className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+      >
+        <Trash2 size={20} />
+      </button>
+    </div>
+  </td>
+)}
                 </tr>
               ))}
             </tbody>
