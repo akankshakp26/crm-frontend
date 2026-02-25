@@ -5,7 +5,7 @@ import axiosInstance from "./api/axiosInstance";
 import Layout from './components/Layout';
 import LoginPage from './components/Login';
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import Profile from './pages/Profile';
 import Dashboard from './pages/Dashboard';
 import LeadsPage from './pages/LeadsPage';
 import Pipeline from './pages/Pipeline';
@@ -54,6 +54,7 @@ function App() {
                 <Route path="/clients" element={<ClientsPage leads={leads.filter(l => l.status === 'Confirmed')} />} />
                 <Route path="/journey" element={<Journey selectedLead={selectedLead} />} />
                 <Route path="/tasks" element={<TasksPage />} />
+                <Route path="/profile" element={<Profile user={user} setUser={setUser} />} />
               </Routes>
             </Layout>
           </ProtectedRoute>
