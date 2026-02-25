@@ -17,8 +17,8 @@ const Pipeline = () => {
   const columns = [
     { id: "New", title: "Discovery", color: "bg-blue-500" },
     { id: "Contacted", title: "Contacted", color: "bg-purple-500" },
-    { id: "Qualified", title: "Qualified", color: "bg-emerald-500" },
-    { id: "Lost", title: "Lost", color: "bg-slate-400" },
+    { id: "Qualified", title: "Negotiation", color: "bg-emerald-500" },
+    { id: "Lost", title: "Closed Won", color: "bg-slate-400" },
   ];
 
   // 1. Fetch live data from the backend
