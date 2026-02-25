@@ -1,50 +1,50 @@
 import React from 'react';
-import { CheckCircle2, ArrowLeft, Calendar, FileText, MessageSquare } from 'lucide-react';
+import { CheckCircle2, Mail, Calendar, Clock, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Journey = ({ selectedLead }) => {
   const navigate = useNavigate();
-  const companyName = selectedLead ? selectedLead.company : "No Lead Selected";
-  const value = selectedLead ? selectedLead.value : 0;
 
-  const timelineData = [
-    { id: 1, title: "Lead Entry", date: "Feb 01", desc: `${companyName} was added to the CRM pipeline.`, status: "completed", icon: <Calendar size={20}/> },
-    { id: 2, title: "Initial Contact", date: "Feb 05", desc: "Discovery call conducted with the stakeholders.", status: "completed", icon: <MessageSquare size={20}/> },
-    { id: 3, title: "Proposal Phase", date: "Feb 10", desc: `Drafting a contract with a forecast value of $${value.toLocaleString()}.`, status: "in-progress", icon: <FileText size={20}/> },
+  if (!selectedLead) {
+    return (
+      <div className="p-20 text-center">
+        <div className="bg-slate-50 inline-block p-10 rounded-[3rem] border border-dashed border-slate-200">
+          <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Select a lead from the Leads page to view their journey</p>
+        </div>
+      </div>
+    );
+  }
+
+  const milestones = [
+    { type: 'Discovery', date: 'Feb 20, 2026', desc: 'Initial lead captured.', icon: <CheckCircle2 className="text-emerald-500"/> },
+    { type: 'Outreach', date: 'Feb 22, 2026', desc: 'First intro email sent.', icon: <Mail className="text-blue-500"/> },
+    { type: 'Proposal', date: 'Feb 24, 2026', desc: 'Price proposal sent for review.', icon: <Clock className="text-amber-500"/> },
   ];
 
   return (
-    <div className="max-w-4xl mx-auto text-left animate-in fade-in duration-700">
-      <button 
-        onClick={() => navigate('/leads')} 
-        className="mb-8 flex items-center gap-2 text-slate-400 hover:text-slate-900 font-bold text-sm transition-all"
-      >
-        <ArrowLeft size={16} /> Back to Leads
+    <div className="p-8 max-w-4xl mx-auto text-left">
+      <button onClick={() => navigate('/leads')} className="flex items-center gap-2 text-slate-400 hover:text-slate-900 font-black uppercase text-[10px] tracking-widest mb-8 transition-all">
+        <ArrowLeft size={16}/> Back to Leads
       </button>
 
       <div className="mb-12">
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight">{companyName}</h1>
-        <p className="text-blue-600 font-bold mt-2 uppercase tracking-widest text-[10px]">Strategic Client Roadmap</p>
+        <h1 className="text-5xl font-black text-slate-900 tracking-tight">{selectedLead.company}</h1>
+        <p className="text-slate-400 font-bold uppercase text-xs mt-3 tracking-[0.3em]">Lifecycle Activity Feed</p>
       </div>
 
-      <div className="relative">
-        <div className="absolute left-8 top-0 bottom-0 w-1 bg-slate-100 rounded-full"></div>
-        <div className="space-y-12">
-          {timelineData.map((item) => (
-            <div key={item.id} className="relative flex items-start gap-12 group">
-              <div className={`z-10 w-16 h-16 rounded-3xl flex items-center justify-center border-4 border-white shadow-xl ${item.status === 'completed' ? 'bg-blue-600 text-white shadow-blue-100' : 'bg-white text-blue-600 border-blue-50 shadow-sm'}`}>
-                {item.status === 'completed' ? <CheckCircle2 size={24} /> : item.icon}
+      <div className="relative border-l-4 border-slate-100 ml-6 pl-12 space-y-10">
+        {milestones.map((step, index) => (
+          <div key={index} className="relative">
+            <div className="absolute -left-[68px] top-0 bg-white p-2 rounded-full border-4 border-slate-50 shadow-sm">{step.icon}</div>
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-50">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-xl font-black text-slate-900">{step.type}</h3>
+                <span className="text-slate-400 text-[10px] font-black uppercase flex items-center gap-2"><Calendar size={12}/> {step.date}</span>
               </div>
-              <div className="flex-1 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-black text-slate-900">{item.title}</h3>
-                  <span className="text-[10px] font-black text-slate-400 uppercase bg-slate-50 px-3 py-1 rounded-full">{item.date}</span>
-                </div>
-                <p className="text-sm font-medium text-slate-500 leading-relaxed">{item.desc}</p>
-              </div>
+              <p className="text-slate-500 font-bold text-sm leading-relaxed">{step.desc}</p>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   );
