@@ -92,17 +92,17 @@ function App() {
                 <Routes>
                   {/* 👇 Your REAL Dashboard.js file! 👇 */}
                   <Route path="/" element={<Dashboard />} />
-                  <Route 
-                    path="/leads" 
-                    element={
-                      <LeadsPage
-                        leads={filteredLeads}
-                        setLeads={setLeads}
-                        setSelectedLead={setSelectedLead}
-                        user={user}   // 🔥 Harshitha's new role access
-                      />
-                    }
-                  />
+                 <Route 
+  path="/leads" 
+  element={
+    <LeadsPage
+      leads={filteredLeads} // Pass the filtered list here
+      setLeads={setLeads}
+      user={user}
+    />
+  }
+/>
+                   
                   <Route path="/clients" element={<ClientsPage leads={filteredLeads} />} />
                   <Route path="/pipeline" element={<Pipeline leads={filteredLeads} setLeads={setLeads} user={user} />} />
                   <Route path="/journey" element={<Journey selectedLead={selectedLead} />} />
