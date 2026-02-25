@@ -5,7 +5,7 @@ const LeadsPage = () => {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+const [email, setEmail] = useState("");
   // 🔹 Form states
   const [company, setCompany] = useState("");
   const [value, setValue] = useState("");
@@ -31,27 +31,28 @@ const isAdmin = user.role === "admin";
   }, []);
 
   // 🔹 Create lead
-  const createLead = async (e) => {
-    e.preventDefault();
+const createLead = async (e) => {
+  e.preventDefault();
 
-    try {
-      const res = await axiosInstance.post("/leads", {
-        company,
-        value,
-        stage,
-      });
+  try {
+    const res = await axiosInstance.post("/leads", {
+      name: company,
+      email: email,
+      status: stage,
+      value: Number(value)
+    });
 
-      setLeads([...leads, res.data]);
+    setLeads([...leads, res.data]);
 
-      // clear form
-      setCompany("");
-      setValue("");
-      setStage("Discovery");
+    setCompany("");
+    setEmail("");
+    setValue("");
+    setStage("New");
 
-    } catch (err) {
-      console.error("Create Lead Error:", err.response?.data);
-    }
-  };
+  } catch (err) {
+    console.error("Create Lead Error:", err.response?.data);
+  }
+};
 
   // 🔹 Delete lead
   const deleteLead = async (id) => {
@@ -71,35 +72,44 @@ const isAdmin = user.role === "admin";
       <h2>Add New Lead</h2>
 
       {/* 🔹 FORM */}
-      <form onSubmit={createLead} style={{ marginBottom: "20px" }}>
-        <input
-          type="text"
-          placeholder="Company Name"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-          required
-        />
+    <form onSubmit={createLead} style={{ marginBottom: "20px" }}>
 
-        <input
-          type="number"
-          placeholder="Value"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          required
-        />
+  <input
+    type="text"
+    placeholder="Company Name"
+    value={company}
+    onChange={(e) => setCompany(e.target.value)}
+    required
+  />
 
-        <select
-          value={stage}
-          onChange={(e) => setStage(e.target.value)}
-        >
-          <option value="Discovery">Discovery</option>
-          <option value="Proposal">Proposal</option>
-          <option value="Negotiation">Negotiation</option>
-          <option value="Closed Won">Closed Won</option>
-        </select>
+  <input
+    type="email"
+    placeholder="Email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+    required
+  />
 
-        <button type="submit">Add Lead</button>
-      </form>
+  <input
+    type="number"
+    placeholder="Value"
+    value={value}
+    onChange={(e) => setValue(e.target.value)}
+  />
+
+  <select
+    value={stage}
+    onChange={(e) => setStage(e.target.value)}
+  >
+    <option value="New">New</option>
+    <option value="Qualified">Qualified</option>
+    <option value="Proposal">Proposal</option>
+    <option value="Closed Won">Closed Won</option>
+  </select>
+
+  <button type="submit">Add Lead</button>
+
+</form>
 
       <h2>Leads List</h2>
 
