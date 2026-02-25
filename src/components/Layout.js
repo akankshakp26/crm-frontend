@@ -139,13 +139,18 @@ const Layout = ({ children, onLogout, user, searchTerm, setSearchTerm }) => {
             </div>
           </div>
         </header>
-        <section className="flex-1 overflow-y-auto bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
-          <div className="max-w-[1400px] mx-auto p-8 lg:p-12 animate-in fade-in duration-700">{children}</div>
-        </section>
-        {/* ✅ Global Footer */}
-<footer className="text-center py-6 text-sm text-slate-400 border-t border-slate-200 bg-white">
-  © {new Date().getFullYear()} Valise CRM. All rights reserved.
-</footer>
+       <section className="flex-1 overflow-y-auto bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
+  <div className="min-h-full flex flex-col">
+    <div className="max-w-[1400px] w-full mx-auto p-8 lg:p-12 animate-in fade-in duration-700 flex-1">
+      {children}
+    </div>
+
+    {/* ✅ Footer at end of page content (scrolls naturally) */}
+    <footer className="text-center py-6 text-sm text-slate-400 border-t border-slate-200 bg-white">
+      © {new Date().getFullYear()} Valise CRM. All rights reserved.
+    </footer>
+  </div>
+</section>
 
       </main>
     </div>
