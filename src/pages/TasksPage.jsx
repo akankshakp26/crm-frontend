@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+// src/pages/TasksPage.jsx
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   CalendarDays,
@@ -8,36 +9,21 @@ import {
   Clock3,
   Search,
   X,
+  Loader2,
 } from "lucide-react";
 
-const seedTasks = [
-  {
-    id: 1,
-    title: "Call Monika (Client: ABC Pvt Ltd)",
-    due: "2026-02-13",
-    priority: "High",
-    done: false,
-  },
-  {
-    id: 2,
-    title: "Send proposal email to XYZ Industries",
-    due: "2026-02-15",
-    priority: "Medium",
-    done: false,
-  },
-  {
-    id: 3,
-    title: "Update lead notes for 3 prospects",
-    due: "2026-02-20",
-    priority: "Low",
-    done: true,
-  },
-];
+// ✅ If your file is: src/api.js
+// then TasksPage.jsx is in: src/pages/TasksPage.jsx
+// so import path is "../api"
+import { TASKS_API } from "../api";
 
 export default function TasksPage() {
   const [activeTab, setActiveTab] = useState("Today"); // Today | Upcoming | Completed
   const [query, setQuery] = useState("");
-  const [tasks, setTasks] = useState(seedTasks);
+
+  // ✅ Backend tasks
+  const [tasks, setTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Add Task Modal
   const [open, setOpen] = useState(false);
@@ -59,59 +45,155 @@ export default function TasksPage() {
   const isPast = (iso) => iso < todayISO;
   const isFuture = (iso) => iso > todayISO;
 
-  const filteredTasks = useMemo(() => {
-    const q = query.trim().toLowerCase();
+  // ✅ Same pattern as LeadsPage: fetch -> map -> setState
+  const fetchTasks = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(TASKS_API);
+      const data = await response.json();
 
-    return tasks
-      .filter((t) => {
-        if (activeTab === "Completed") return t.done;
-        if (activeTab === "Today") return !t.done && isToday(t.due);
-        if (activeTab === "Upcoming") return !t.done && isFuture(t.due);
-        return true;
-      })
-      .filter((t) => (q ? t.title.toLowerCase().includes(q) : true))
-      .sort((a, b) => (a.due > b.due ? 1 : -1));
-  }, [tasks, activeTab, query, todayISO]);
+      // Normalize backend fields to UI fields
+      const formatted = (Array.isArray(data) ? data : data?.tasks || []).map(
+        (t) => ({
+          id: t._id || t.id,
+          title: t.title || t.name || "",
+          due: (t.dueDate || t.due || "").toString().slice(0, 10), // YYYY-MM-DD
+          priority: t.priority || "Medium",
+          done: Boolean(t.done ?? t.completed ?? false),
+        })
+      );
 
-  const stats = useMemo(() => {
-    const todayCount = tasks.filter((t) => !t.done && isToday(t.due)).length;
-    const upcomingCount = tasks.filter((t) => !t.done && isFuture(t.due)).length;
-    const completedCount = tasks.filter((t) => t.done).length;
-    return { todayCount, upcomingCount, completedCount };
-  }, [tasks, todayISO]);
-
-  const toggleDone = (id) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
-    );
+      setTasks(formatted);
+    } catch (err) {
+      console.error("Tasks fetch failed", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const addTask = (e) => {
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+const filteredTasks = useMemo(() => {
+  const q = query.trim().toLowerCase();
+
+  const isToday = (iso) => iso === todayISO;
+  const isFuture = (iso) => iso > todayISO;
+
+  return tasks
+    .filter((t) => {
+      if (activeTab === "Completed") return t.done;
+      if (activeTab === "Today") return !t.done && isToday(t.due);
+      if (activeTab === "Upcoming") return !t.done && isFuture(t.due);
+      return true;
+    })
+    .filter((t) => (q ? (t.title || "").toLowerCase().includes(q) : true))
+    .sort((a, b) => (a.due > b.due ? 1 : -1));
+}, [tasks, activeTab, query, todayISO]);
+const stats = useMemo(() => {
+  const isToday = (iso) => iso === todayISO;
+  const isFuture = (iso) => iso > todayISO;
+
+  const todayCount = tasks.filter((t) => !t.done && isToday(t.due)).length;
+  const upcomingCount = tasks.filter((t) => !t.done && isFuture(t.due)).length;
+  const completedCount = tasks.filter((t) => t.done).length;
+
+  return { todayCount, upcomingCount, completedCount };
+}, [tasks, todayISO]);
+
+  // ✅ PATCH toggle done (same idea as Leads delete uses token)
+  const toggleDone = async (id) => {
+    const token = localStorage.getItem("token"); // keep if your backend expects it
+
+    const current = tasks.find((t) => t.id === id);
+    if (!current) return;
+
+    try {
+      const response = await fetch(`${TASKS_API}/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ done: !current.done }),
+      });
+
+      if (response.ok) {
+        // optimistic update
+        setTasks((prev) =>
+          prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
+        );
+      } else {
+        // If your backend doesn't support PATCH, this will fail.
+        // Then tell me your tasks route file and I'll match it.
+        alert("Update failed (PATCH). Check backend route.");
+      }
+    } catch (err) {
+      console.error("Toggle done failed", err);
+    }
+  };
+
+  // ✅ POST add task (same as Leads POST)
+  const addTask = async (e) => {
     e.preventDefault();
+
     if (!newTask.title.trim() || !newTask.due) {
       alert("Please enter Task Title + Due Date");
       return;
     }
-    setTasks((prev) => [
-      {
-        id: Date.now(),
-        title: newTask.title.trim(),
-        due: newTask.due,
-        priority: newTask.priority,
-        done: false,
-      },
-      ...prev,
-    ]);
-    setNewTask({ title: "", due: "", priority: "Medium" });
-    setOpen(false);
-    setActiveTab(isToday(newTask.due) ? "Today" : "Upcoming");
+
+    const payload = {
+      title: newTask.title.trim(),
+      dueDate: newTask.due,
+      priority: newTask.priority,
+    };
+
+    try {
+      const response = await fetch(TASKS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        await fetchTasks(); // refresh list like leads
+        setNewTask({ title: "", due: "", priority: "Medium" });
+        setOpen(false);
+        setActiveTab(isToday(payload.dueDate) ? "Today" : "Upcoming");
+      } else {
+        alert("Add task failed. Check backend validation.");
+      }
+    } catch (err) {
+      console.error("Add task failed", err);
+    }
+  };
+
+  // ✅ Optional: DELETE task (same as Leads delete)
+  const deleteTask = async (id) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`${TASKS_API}/${id}`, {
+        method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (response.ok) {
+        setTasks((prev) => prev.filter((t) => t.id !== id));
+      } else {
+        alert("Delete failed.");
+      }
+    } catch (err) {
+      console.error("Delete task failed", err);
+    }
   };
 
   return (
     <div className="space-y-8">
       {/* HERO HEADER */}
       <div className="relative overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-sm">
-        {/* pattern / gradient */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,#e2e8f0_1px,transparent_1px)] [background-size:18px_18px] opacity-60" />
         <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-blue-600/15 blur-3xl" />
         <div className="absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-slate-900/10 blur-3xl" />
@@ -207,7 +289,12 @@ export default function TasksPage() {
         </div>
 
         <div className="p-6 lg:p-8">
-          {filteredTasks.length === 0 ? (
+          {isLoading ? (
+            <div className="p-16 flex flex-col items-center gap-4 text-slate-400 font-bold">
+              <Loader2 className="animate-spin" size={40} />
+              Loading tasks...
+            </div>
+          ) : filteredTasks.length === 0 ? (
             <EmptyState
               activeTab={activeTab}
               onAdd={() => setOpen(true)}
@@ -216,8 +303,13 @@ export default function TasksPage() {
           ) : (
             <div className="grid gap-4">
               {filteredTasks.map((t) => {
-                const status =
-                  t.done ? "Done" : isPast(t.due) ? "Overdue" : isToday(t.due) ? "Today" : "Upcoming";
+                const status = t.done
+                  ? "Done"
+                  : isPast(t.due)
+                  ? "Overdue"
+                  : isToday(t.due)
+                  ? "Today"
+                  : "Upcoming";
 
                 return (
                   <div
@@ -262,11 +354,25 @@ export default function TasksPage() {
                               <Badge
                                 icon={<Flag className="h-4 w-4" />}
                                 text={`Priority: ${t.priority}`}
-                                tone={t.priority === "High" ? "red" : t.priority === "Medium" ? "yellow" : "green"}
+                                tone={
+                                  t.priority === "High"
+                                    ? "red"
+                                    : t.priority === "Medium"
+                                    ? "yellow"
+                                    : "green"
+                                }
                               />
                               <Badge
                                 text={status}
-                                tone={status === "Overdue" ? "red" : status === "Today" ? "blue" : status === "Upcoming" ? "slate" : "green"}
+                                tone={
+                                  status === "Overdue"
+                                    ? "red"
+                                    : status === "Today"
+                                    ? "blue"
+                                    : status === "Upcoming"
+                                    ? "slate"
+                                    : "green"
+                                }
                               />
                             </div>
                           </div>
@@ -280,22 +386,25 @@ export default function TasksPage() {
                               View
                             </button>
                             <button
-                              className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition"
+                              className="rounded-2xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 transition"
                               type="button"
-                              onClick={() => alert("UI only")}
+                              onClick={() => deleteTask(t.id)}
                             >
-                              Add Note
+                              Delete
                             </button>
                           </div>
                         </div>
 
-                        {/* subtle progress bar */}
                         {!t.done && (
                           <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
                             <div
                               className={[
                                 "h-full rounded-full",
-                                isPast(t.due) ? "w-[85%] bg-red-500" : isToday(t.due) ? "w-[60%] bg-blue-600" : "w-[35%] bg-slate-500",
+                                isPast(t.due)
+                                  ? "w-[85%] bg-red-500"
+                                  : isToday(t.due)
+                                  ? "w-[60%] bg-blue-600"
+                                  : "w-[35%] bg-slate-500",
                               ].join(" ")}
                             />
                           </div>
@@ -331,10 +440,14 @@ export default function TasksPage() {
 
             <form onSubmit={addTask} className="p-6 space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-500">Task Title</label>
+                <label className="text-xs font-bold text-slate-500">
+                  Task Title
+                </label>
                 <input
                   value={newTask.title}
-                  onChange={(e) => setNewTask((p) => ({ ...p, title: e.target.value }))}
+                  onChange={(e) =>
+                    setNewTask((p) => ({ ...p, title: e.target.value }))
+                  }
                   placeholder="Eg: Follow up with client…"
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-300 transition"
                 />
@@ -342,20 +455,28 @@ export default function TasksPage() {
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="text-xs font-bold text-slate-500">Due Date</label>
+                  <label className="text-xs font-bold text-slate-500">
+                    Due Date
+                  </label>
                   <input
                     type="date"
                     value={newTask.due}
-                    onChange={(e) => setNewTask((p) => ({ ...p, due: e.target.value }))}
+                    onChange={(e) =>
+                      setNewTask((p) => ({ ...p, due: e.target.value }))
+                    }
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-300 transition"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-500">Priority</label>
+                  <label className="text-xs font-bold text-slate-500">
+                    Priority
+                  </label>
                   <select
                     value={newTask.priority}
-                    onChange={(e) => setNewTask((p) => ({ ...p, priority: e.target.value }))}
+                    onChange={(e) =>
+                      setNewTask((p) => ({ ...p, priority: e.target.value }))
+                    }
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-300 transition"
                   >
                     <option>High</option>
@@ -419,7 +540,9 @@ function StatCard({ title, value, icon, tone = "slate" }) {
         <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
           {title}
         </p>
-        <span className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-bold ${map[tone]}`}>
+        <span
+          className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-bold ${map[tone]}`}
+        >
           {icon}
         </span>
       </div>
@@ -480,7 +603,6 @@ function EmptyState({ activeTab, onAdd, onReset }) {
 }
 
 function formatDate(iso) {
-  // simple readable date (safe)
   try {
     const d = new Date(iso);
     const dd = String(d.getDate()).padStart(2, "0");
