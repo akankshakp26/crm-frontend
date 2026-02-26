@@ -4,20 +4,15 @@ const axiosInstance = axios.create({
   baseURL: "http://localhost:5000/api",
 });
 
-// 🔐 Attach token automatically
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
+axiosInstance.interceptors.request.use((config) => {
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+  const token = localStorage.getItem("token");
 
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+
+  return config;
+});
 
 export default axiosInstance;

@@ -1,121 +1,66 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import TasksPage from "./pages/TasksPage";
+import { Toaster } from 'react-hot-toast';
 import axiosInstance from "./api/axiosInstance";
-import ProtectedRoute from "./components/ProtectedRoute";
-
-// Layout & Core Components
 import Layout from './components/Layout';
-import LoginPage from './components/Login'; 
-
-// Pages
-import LeadsPage from './pages/LeadsPage';
-import ClientsPage from './pages/ClientsPage';
-import Pipeline from './pages/Pipeline';
-import Journey from './pages/Journey';
+import LoginPage from './components/Login';
+import ProtectedRoute from "./components/ProtectedRoute";
 import Profile from './pages/Profile';
-import Dashboard from './pages/Dashboard'; // <-- YOUR DASHBOARD IMPORT
+import Dashboard from './pages/Dashboard';
+import LeadsPage from './pages/LeadsPage';
+import Pipeline from './pages/Pipeline';
+import ClientsPage from './pages/ClientsPage';
+import Journey from './pages/Journey';
+import TasksPage from './pages/TasksPage';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    !!localStorage.getItem("token")
-  );
-
-  const [selectedLead, setSelectedLead] = useState(null);
-  const [searchTerm, setSearchTerm] = useState(''); // SEARCH STATE
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
-
-    if (token && storedUser) {
-      setIsAuthenticated(true);
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
-
-  const handleLogin = (userData) => {
-    setUser(userData);
-    setIsAuthenticated(true);
-  };
-
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem("user") || "null"));
   const [leads, setLeads] = useState([]);
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const res = await axiosInstance.get("/dashboard");
-        setLeads(res.data);
-      } catch (error) {
-        console.error("Dashboard fetch error:", error.response?.data);
-      }
-    };
-
-    if (localStorage.getItem("token")) {
-      fetchDashboardData();
-    }
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setIsAuthenticated(false);
-    setUser(null);
+  const fetchLeads = async () => {
+    try {
+      const res = await axiosInstance.get("/leads");
+      const formatted = res.data.map(l => ({
+        id: l._id,
+        company: l.name,
+        email: l.email,
+        value: l.value || 0,
+        status: l.status || "New",
+        history: l.history || []
+      }));
+      setLeads(formatted);
+    } catch (err) { console.error("Sync Error", err); }
   };
 
-  const filteredLeads = leads.filter(lead => 
-    lead.company?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => { if (isAuthenticated) fetchLeads(); }, [isAuthenticated]);
+
+  const filteredLeads = leads.filter(l => l.company?.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <Router>
+      <Toaster position="top-right" />
       <Routes>
-        <Route 
-          path="/login" 
-          element={
-            !isAuthenticated 
-              ? <LoginPage onLogin={handleLogin} /> 
-              : <Navigate to="/" />
-          } 
-        />
-        <Route
-          path="/*"
-          element={
-            <ProtectedRoute>
-              <Layout
-                onLogout={handleLogout}
-                user={user}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-              >
-                <Routes>
-                  {/* 👇 Your REAL Dashboard.js file! 👇 */}
-                  <Route path="/" element={<Dashboard />} />
-                  <Route 
-                    path="/leads" 
-                    element={
-                      <LeadsPage
-                        leads={filteredLeads}
-                        setLeads={setLeads}
-                        setSelectedLead={setSelectedLead}
-                        user={user}   // 🔥 Harshitha's new role access
-                      />
-                    }
-                  />
-                  <Route path="/clients" element={<ClientsPage leads={filteredLeads} />} />
-                  <Route path="/pipeline" element={<Pipeline leads={filteredLeads} setLeads={setLeads} user={user} />} />
-                  <Route path="/journey" element={<Journey selectedLead={selectedLead} />} />
-                  <Route path="/profile" element={<Profile user={user} setUser={setUser} />} />
-                  <Route path="/tasks" element={<TasksPage />} />
-                </Routes>
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/login" element={!isAuthenticated ? <LoginPage onLogin={(u) => {setUser(u); setIsAuthenticated(true);}} /> : <Navigate to="/" />} />
+        <Route path="/*" element={
+          <ProtectedRoute>
+            <Layout onLogout={() => {localStorage.clear(); setIsAuthenticated(false);}} user={user} searchTerm={searchTerm} setSearchTerm={setSearchTerm}>
+              <Routes>
+                <Route path="/" element={<Dashboard leads={leads} />} />
+                <Route path="/leads" element={<LeadsPage leads={filteredLeads} setLeads={setLeads} setSelectedLead={setSelectedLead} user={user} refresh={fetchLeads} />} />
+                <Route path="/pipeline" element={<Pipeline leads={leads} setLeads={setLeads} refresh={fetchLeads} />} />
+                <Route path="/clients" element={<ClientsPage leads={leads.filter(l => l.status === 'Confirmed')} />} />
+                <Route path="/journey" element={<Journey selectedLead={selectedLead} />} />
+                <Route path="/tasks" element={<TasksPage />} />
+                <Route path="/profile" element={<Profile user={user} setUser={setUser} />} />
+              </Routes>
+            </Layout>
+          </ProtectedRoute>
+        } />
       </Routes>
     </Router>
   );
 }
-
 export default App;

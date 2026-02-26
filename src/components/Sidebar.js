@@ -1,45 +1,42 @@
-import React from 'react';
-import { LayoutDashboard, Users, Briefcase, Heart, Settings, LogOut } from 'lucide-react';
+import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { LayoutDashboard, GitMerge, Settings, Users, Map } from "lucide-react";
 
 const Sidebar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const sidebarBg = "#1e2532"; 
+  const activeBlue = "#3b82f6";
+
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, active: true },
-    { name: 'Lead List', icon: Users, active: false }, // Akanksha's Page
-    { name: 'Sales Pipeline', icon: Briefcase, active: false },
-    { name: 'Client Insights', icon: Heart, active: false }, // Your Feature
-    { name: 'Settings', icon: Settings, active: false },
+    { icon: <LayoutDashboard size={22} />, path: "/" },
+    { icon: <GitMerge size={22} />, path: "/pipeline" },
+    { icon: <Users size={22} />, path: "/leads" },
+    { icon: <Map size={22} />, path: "/journey" },
+    { icon: <Settings size={22} />, path: "/profile" },
   ];
 
   return (
-    <div className="h-screen w-64 bg-slate-900 text-slate-300 flex flex-col fixed left-0 top-0">
-      <div className="p-6">
-        <h1 className="text-white text-2xl font-bold flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg"></div> CRM.io
-        </h1>
+    <div style={{ backgroundColor: sidebarBg }} className="w-20 h-screen flex flex-col items-center py-6 fixed left-0 top-0 z-50">
+      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-12 shadow-lg shadow-blue-500/40">
+        <span className="text-white font-black text-xl">V</span>
       </div>
 
-      <nav className="flex-1 px-4 space-y-2 mt-4">
-        {menuItems.map((item) => (
-          <a
-            key={item.name}
-            href="#"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              item.active 
-                ? 'bg-blue-600 text-white' 
-                : 'hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <item.icon size={20} />
-            <span className="font-medium">{item.name}</span>
-          </a>
-        ))}
-      </nav>
-
-      <div className="p-4 border-t border-slate-800">
-        <button className="flex items-center gap-3 px-4 py-3 w-full hover:bg-slate-800 rounded-lg transition-colors">
-          <LogOut size={20} />
-          <span>Logout</span>
-        </button>
+      <div className="flex flex-col gap-8 w-full items-center">
+        {menuItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <div key={item.path} className="relative w-full flex justify-center items-center group">
+              {isActive && (
+                <div style={{ backgroundColor: activeBlue, boxShadow: `0 0 10px ${activeBlue}` }} className="absolute left-0 w-1 h-8 rounded-r-full" />
+              )}
+              <button onClick={() => navigate(item.path)} className={`p-3 rounded-2xl transition-all duration-200 ${isActive ? "bg-slate-700/40 text-blue-400 border border-white/5" : "text-slate-500 hover:text-slate-300"}`}>
+                {item.icon}
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
