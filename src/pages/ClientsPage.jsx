@@ -7,27 +7,27 @@ const ClientsPage = ({ leads }) => {
 
   return (
     <div className="p-8 text-left bg-white min-h-screen">
-      {/* Consolidate Header Section */}
-      <div className="mb-12 flex justify-between items-center">
+      
+      {/* 🔹 MAIN HEADER SECTION (Total Badge on the Right) */}
+      <div className="mb-12 flex justify-between items-end border-b border-slate-100 pb-8">
         <div>
-          <div className="flex items-center gap-4">
-            <h1 className="text-5xl font-black text-slate-900 tracking-tight">Active Clients</h1>
-            
-            {/* 🔹 Dynamic Total Number Badge */}
-            <div className="bg-slate-900 text-white px-4 py-1.5 rounded-2xl flex items-center gap-2 shadow-lg shadow-slate-200">
-              <span className="text-blue-500 font-black text-xl">{activeClients.length}</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 border-l border-slate-700 pl-2">Total</span>
-            </div>
-          </div>
-          
+          <h1 className="text-5xl font-black text-slate-900 tracking-tight">Active Clients</h1>
           <p className="text-blue-600 font-bold text-xs uppercase mt-3 tracking-[0.3em] flex items-center gap-2">
              <TrendingUp size={14} /> High-Value Enterprise Accounts
           </p>
         </div>
         
-        <div className="text-right hidden sm:block">
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Portfolio Status</p>
-          <p className="text-slate-900 font-black text-sm uppercase">Live & Synced</p>
+        <div className="text-right flex flex-col items-end gap-3">
+          {/* Total Badge moved here */}
+          <div className="bg-slate-900 text-white px-4 py-1.5 rounded-2xl flex items-center gap-2 shadow-lg shadow-slate-200 w-fit">
+            <span className="text-blue-500 font-black text-xl">{activeClients.length}</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 border-l border-slate-700 pl-2">Total</span>
+          </div>
+
+          <div>
+            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Portfolio Status</p>
+            <p className="text-slate-900 font-black text-sm uppercase">Live & Synced</p>
+          </div>
         </div>
       </div>
 
@@ -54,7 +54,7 @@ const ClientsPage = ({ leads }) => {
                   
                   <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-blue-600/10 rounded-full blur-3xl group-hover:bg-blue-600/20 transition-all" />
 
-                  {/* Top Section */}
+                  {/* 🔹 CARD TOP SECTION (Fixed: Restored Client Name/Initial) */}
                   <div className="flex justify-between items-start mb-10">
                     <div className="space-y-2">
                        <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 rounded-full w-fit">
