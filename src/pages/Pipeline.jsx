@@ -28,7 +28,7 @@ const Pipeline = ({ leads, setLeads, refresh }) => {
       refresh();
 
       if (newStatus === "Confirmed") {
-        toast.success(`${lead.company} confirmed!`, {
+        toast.success(`${lead.company} deal confirmed!`, {
           style: { background: '#0f172a', color: '#fff', borderRadius: '1rem' }
         });
       }
