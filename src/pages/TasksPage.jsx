@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
+import axios from "axios"; // Added Axios to talk to your backend
 import {
   Plus,
   CalendarDays,
@@ -10,34 +11,10 @@ import {
   X,
 } from "lucide-react";
 
-const seedTasks = [
-  {
-    id: 1,
-    title: "Call Monika (Client: ABC Pvt Ltd)",
-    due: "2026-02-13",
-    priority: "High",
-    done: false,
-  },
-  {
-    id: 2,
-    title: "Send proposal email to XYZ Industries",
-    due: "2026-02-15",
-    priority: "Medium",
-    done: false,
-  },
-  {
-    id: 3,
-    title: "Update lead notes for 3 prospects",
-    due: "2026-02-20",
-    priority: "Low",
-    done: true,
-  },
-];
-
 export default function TasksPage() {
-  const [activeTab, setActiveTab] = useState("Today"); // Today | Upcoming | Completed
+  const [activeTab, setActiveTab] = useState("Today");
   const [query, setQuery] = useState("");
-  const [tasks, setTasks] = useState(seedTasks);
+  const [tasks, setTasks] = useState([]); // Start with an empty array!
 
   // Add Task Modal
   const [open, setOpen] = useState(false);
@@ -46,6 +23,33 @@ export default function TasksPage() {
     due: "",
     priority: "Medium",
   });
+
+  // --- NEW: FETCH DATA FROM YOUR BACKEND ---
+  const fetchTasks = async () => {
+    try {
+      // Call your GET /api/tasks endpoint
+      const response = await axios.get("http://localhost:5000/api/tasks");
+      
+      // Map your MongoDB database fields to match this UI's exact needs
+      const realTasks = response.data.map((t) => ({
+        id: t._id, // MongoDB uses _id
+        title: t.title,
+        due: t.dueDate ? t.dueDate.substring(0, 10) : "", // Format ISO date
+        priority: "Medium", // (Your DB model didn't have priority, so we default it)
+        done: t.status === "Completed", // Convert string status to boolean
+      }));
+      
+      setTasks(realTasks);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    }
+  };
+
+  // Run the fetch function exactly once when the page loads
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+  // -----------------------------------------
 
   const todayISO = useMemo(() => {
     const d = new Date();
@@ -80,38 +84,63 @@ export default function TasksPage() {
     return { todayCount, upcomingCount, completedCount };
   }, [tasks, todayISO]);
 
-  const toggleDone = (id) => {
+  // --- NEW: UPDATE DATA IN YOUR BACKEND ---
+  const toggleDone = async (id) => {
+    // 1. Find the task and determine new status
+    const targetTask = tasks.find((t) => t.id === id);
+    const newStatus = targetTask.done ? "Pending" : "Completed";
+
+    // 2. Instantly update UI so it feels fast
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
     );
-  };
 
-  const addTask = (e) => {
+    // 3. Silently update the database in the background
+    try {
+      await axios.put(`http://localhost:5000/api/tasks/${id}`, {
+        status: newStatus,
+      });
+    } catch (error) {
+      console.error("Error updating task:", error);
+      fetchTasks(); // Revert UI if backend fails
+    }
+  };
+  // -----------------------------------------
+
+  // --- NEW: SAVE NEW DATA TO YOUR BACKEND ---
+  const addTask = async (e) => {
     e.preventDefault();
     if (!newTask.title.trim() || !newTask.due) {
       alert("Please enter Task Title + Due Date");
       return;
     }
-    setTasks((prev) => [
-      {
-        id: Date.now(),
+
+    try {
+      // 1. Send data to your POST endpoint
+      await axios.post("http://localhost:5000/api/tasks", {
         title: newTask.title.trim(),
-        due: newTask.due,
-        priority: newTask.priority,
-        done: false,
-      },
-      ...prev,
-    ]);
-    setNewTask({ title: "", due: "", priority: "Medium" });
-    setOpen(false);
-    setActiveTab(isToday(newTask.due) ? "Today" : "Upcoming");
+        dueDate: newTask.due,
+        status: "Pending", // Match your database schema
+      });
+
+      // 2. Refresh the list from the database
+      fetchTasks();
+
+      // 3. Reset UI
+      setNewTask({ title: "", due: "", priority: "Medium" });
+      setOpen(false);
+      setActiveTab(isToday(newTask.due) ? "Today" : "Upcoming");
+    } catch (error) {
+      console.error("Error saving task:", error);
+      alert("Failed to save task to database!");
+    }
   };
+  // -----------------------------------------
 
   return (
     <div className="space-y-8">
       {/* HERO HEADER */}
       <div className="relative overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-sm">
-        {/* pattern / gradient */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,#e2e8f0_1px,transparent_1px)] [background-size:18px_18px] opacity-60" />
         <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-blue-600/15 blur-3xl" />
         <div className="absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-slate-900/10 blur-3xl" />
@@ -480,7 +509,6 @@ function EmptyState({ activeTab, onAdd, onReset }) {
 }
 
 function formatDate(iso) {
-  // simple readable date (safe)
   try {
     const d = new Date(iso);
     const dd = String(d.getDate()).padStart(2, "0");
