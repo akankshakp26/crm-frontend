@@ -1,29 +1,104 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckSquare } from "lucide-react";
-
+import socket from "../socket";
+import axiosInstance from "../api/axiosInstance";
 import { 
   LayoutDashboard, Users, GitMerge, Settings, Map, Search, LogOut, Bell, ChevronDown, User, ShieldCheck, CheckCheck, Trash2
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const Layout = ({ children, onLogout, user, searchTerm, setSearchTerm }) => {
-  const safeUser = user || { name: "", role: "", initial: "safeUser.name?.charAt(0)" };
+ const safeUser = user || { name: "", role: "" };
   const location = useLocation();
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
   // INTERACTIVE NOTIFICATION STATE
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: "Security Update", desc: "MFA is now active.", icon: ShieldCheck, color: "text-blue-600", bg: "bg-blue-50" },
-    { id: 2, title: "System Alert", desc: "Server sync completed.", icon: ShieldCheck, color: "text-emerald-600", bg: "bg-emerald-50" }
-  ]);
-  
-  const markAsRead = (id) => {
-    setNotifications(notifications.filter(note => note.id !== id));
+const [notifications, setNotifications] = useState([]);
+ 
+useEffect(() => {
+
+  const user =
+  JSON.parse(localStorage.getItem("user"));
+
+  if (!user) return;
+
+  // join personal room
+  socket.emit("join", user.id);
+
+  // receive realtime notification
+  socket.on(
+    "notification",
+    (newNotification) => {
+
+      setNotifications(prev =>
+        [newNotification, ...prev]
+      );
+
+    }
+  );
+
+  // initial load
+  const fetchNotifications =
+  async () => {
+
+    const res =
+    await axiosInstance.get(
+      `/notifications/${user.id}`
+    );
+
+    setNotifications(res.data);
+
   };
 
-  const clearAll = () => setNotifications([]);
+  fetchNotifications();
+
+  return () =>
+  socket.off("notification");
+
+}, []);
+
+const markAsRead = async (id) => {
+
+  try {
+
+    await axiosInstance.put(
+      `/notifications/read/${id}`
+    );
+
+    setNotifications(
+      notifications.filter(n => n._id !== id)
+    );
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+};
+const clearAll = async () => {
+
+  try {
+
+    const user =
+    JSON.parse(localStorage.getItem("user"));
+
+    await axiosInstance.put(
+      `/notifications/read-all/${user.id}`
+    );
+
+    setNotifications([]);
+
+  }
+  catch (error) {
+
+    console.error(error);
+
+  }
+
+};
 
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -89,22 +164,38 @@ const Layout = ({ children, onLogout, user, searchTerm, setSearchTerm }) => {
                         </div>
                         <div className="space-y-3">
                             {notifications.length > 0 ? notifications.map(note => (
-                                <div key={note.id} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-2xl transition-all group">
-                                    <div className="flex gap-4">
-                                      <div className={`h-10 w-10 ${note.bg} ${note.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                                          <note.icon size={20} />
-                                      </div>
-                                      <div>
-                                          <p className="text-xs font-bold text-slate-800">{note.title}</p>
-                                          <p className="text-[10px] text-slate-400 mt-1">{note.desc}</p>
-                                      </div>
-                                    </div>
-                                    <button onClick={() => markAsRead(note.id)} className="text-slate-200 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all">
-                                      <CheckCheck size={18} />
-                                    </button>
-                                </div>
-                            )) : (
-                              <div className="py-8 text-center">
+
+  <div key={note._id}
+       className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-2xl transition-all group">
+
+    <div className="flex gap-4">
+
+      <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+        <Bell size={18} />
+      </div>
+
+      <div>
+        <p className="text-xs font-bold text-slate-800">
+          {note.title}
+        </p>
+
+        <p className="text-[10px] text-slate-400 mt-1">
+          {note.message}
+        </p>
+      </div>
+
+    </div>
+
+    <button
+      onClick={() => markAsRead(note._id)}
+      className="text-slate-200 hover:text-blue-500 opacity-0 group-hover:opacity-100"
+    >
+      <CheckCheck size={18}/>
+    </button>
+
+  </div>
+
+)) : ( <div className="py-8 text-center">
                                 <p className="text-xs font-bold text-slate-300 italic">No new notifications</p>
                               </div>
                             )}
