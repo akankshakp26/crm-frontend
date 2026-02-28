@@ -41,8 +41,9 @@ export default function TasksPage() {
       
       setTasks(realTasks);
     } catch (error) {
-      console.error("Error fetching tasks:", error);
-    }
+  console.error("FULL ERROR:", error.response?.data);
+  alert(error.response?.data?.error || "Failed to save task");
+}
   };
 
   // Run the fetch function exactly once when the page loads
@@ -117,11 +118,11 @@ export default function TasksPage() {
 
     try {
       // 1. Send data to your POST endpoint
-      await axios.post("http://localhost:5000/api/tasks", {
-        title: newTask.title.trim(),
-        dueDate: newTask.due,
-        status: "Pending", // Match your database schema
-      });
+await axios.post("http://localhost:5000/api/tasks", {
+  title: newTask.title.trim(),
+  dueDate: new Date(newTask.due), // FIX
+  status: "Pending",
+});
 
       // 2. Refresh the list from the database
       fetchTasks();
