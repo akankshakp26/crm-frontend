@@ -15,7 +15,11 @@ export default function TasksPage() {
   const [activeTab, setActiveTab] = useState("Today");
   const [query, setQuery] = useState("");
   const [tasks, setTasks] = useState([]); // Start with an empty array!
-
+  const [selectedTask, setSelectedTask] = useState(null);
+const [noteText, setNoteText] = useState("");
+const [editMode, setEditMode] = useState(false);
+const [editTitle, setEditTitle] = useState("");
+const [editDate, setEditDate] = useState("");
   // Add Task Modal
   const [open, setOpen] = useState(false);
   const [newTask, setNewTask] = useState({
@@ -37,6 +41,7 @@ export default function TasksPage() {
         due: t.dueDate ? t.dueDate.substring(0, 10) : "", // Format ISO date
         priority: "Medium", // (Your DB model didn't have priority, so we default it)
         done: t.status === "Completed", // Convert string status to boolean
+        notes: t.notes || []
       }));
       
       setTasks(realTasks);
@@ -305,16 +310,9 @@ await axios.post("http://localhost:5000/api/tasks", {
                             <button
                               className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
                               type="button"
-                              onClick={() => alert("UI only")}
+                              onClick={() => setSelectedTask(t)}
                             >
                               View
-                            </button>
-                            <button
-                              className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition"
-                              type="button"
-                              onClick={() => alert("UI only")}
-                            >
-                              Add Note
                             </button>
                           </div>
                         </div>
@@ -414,6 +412,212 @@ await axios.post("http://localhost:5000/api/tasks", {
           </div>
         </div>
       )}
+
+      {selectedTask && (
+  <div className="fixed inset-0 z-50 flex">
+
+    {/* overlay */}
+    <div
+      className="flex-1 bg-black/30 backdrop-blur-sm"
+      onClick={() => setSelectedTask(null)}
+    />
+
+    {/* panel */}
+    <div className="w-[420px] bg-white shadow-2xl border-l border-slate-200 flex flex-col">
+
+      {/* HEADER */}
+      <div className="flex items-center justify-between px-6 py-4 border-b">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">
+            Task Details
+          </h2>
+          <p className="text-sm text-slate-500">
+            View and manage task
+          </p>
+        </div>
+
+        <button
+          onClick={() => setSelectedTask(null)}
+          className="text-slate-400 hover:text-slate-700 text-xl"
+        >
+          ✕
+        </button>
+      </div>
+
+
+      {/* BODY */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+        {/* TASK INFO CARD */}
+        <div className="bg-slate-50 rounded-xl p-4 space-y-2">
+
+          <div>
+{editMode ? (
+
+  <input
+    value={editTitle}
+    onChange={(e)=>setEditTitle(e.target.value)}
+    className="border p-2 rounded w-full"
+  />
+
+) : (
+
+  <p className="font-semibold">
+    {selectedTask.title}
+  </p>
+
+)}
+          </div>
+
+          <div>
+{editMode ? (
+
+  <input
+    type="date"
+    value={editDate}
+    onChange={(e)=>setEditDate(e.target.value)}
+    className="border p-2 rounded w-full"
+  />
+
+) : (
+
+  <p>
+    {formatDate(selectedTask.due)}
+  </p>
+
+)}
+          </div>
+
+          <div>
+            <p className="text-xs text-slate-500">Status</p>
+            <span className={`inline-block px-3 py-1 text-xs rounded-full font-semibold ${
+              selectedTask.done
+                ? "bg-green-100 text-green-700"
+                : "bg-blue-100 text-blue-700"
+            }`}>
+              {selectedTask.done ? "Completed" : "Pending"}
+            </span>
+          </div>
+
+        </div>
+
+
+        {/* NOTES */}
+        <div>
+
+          <h3 className="font-semibold mb-3">
+            Notes Activity
+          </h3>
+
+          {/* notes list */}
+          <div className="space-y-3">
+
+            {selectedTask.notes?.length === 0 && (
+              <p className="text-sm text-slate-400">
+                No activity yet
+              </p>
+            )}
+
+            {selectedTask.notes?.map((note, i) => (
+
+  <div
+    key={note._id}
+    className="border rounded-lg p-3 bg-white shadow-sm flex justify-between items-start"
+  >
+
+    <div>
+      <p className="text-sm">
+        {note.text}
+      </p>
+
+      <p className="text-xs text-slate-400 mt-1">
+        {new Date(note.createdAt).toLocaleString()}
+      </p>
+    </div>
+
+    {/* DELETE BUTTON */}
+    <button
+      className="text-red-500 hover:text-red-700 text-sm font-semibold"
+      onClick={async ()=>{
+
+        if(!window.confirm("Delete this note?")) return;
+
+        await axios.delete(
+          `http://localhost:5000/api/tasks/${selectedTask.id}/note/${note._id}`
+        );
+
+        fetchTasks();
+
+        setSelectedTask({
+          ...selectedTask,
+          notes: selectedTask.notes.filter(
+            n => n._id !== note._id
+          )
+        });
+
+      }}
+    >
+      Delete
+    </button>
+
+  </div>
+
+))}
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      {/* FOOTER ADD NOTE */}
+      <div className="border-t p-4">
+
+        <textarea
+          value={noteText}
+          onChange={(e)=>setNoteText(e.target.value)}
+          placeholder="Write a note..."
+          className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+        />
+
+        <button
+          className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold"
+          onClick={async ()=>{
+
+            if(!noteText) return;
+
+            await axios.post(
+              `http://localhost:5000/api/tasks/${selectedTask.id}/note`,
+              { text: noteText }
+            );
+
+            setNoteText("");
+
+            fetchTasks();
+
+            setSelectedTask({
+              ...selectedTask,
+              notes: [
+                ...selectedTask.notes,
+                {
+                  text: noteText,
+                  createdAt: new Date()
+                }
+              ]
+            });
+
+          }}
+        >
+          Add Note
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+)}
     </div>
   );
 }
@@ -504,7 +708,12 @@ function EmptyState({ activeTab, onAdd, onReset }) {
         >
           Clear Search
         </button>
+
+
+        
       </div>
+      
+
     </div>
   );
 }
