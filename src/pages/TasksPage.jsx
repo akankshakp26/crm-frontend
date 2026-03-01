@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import axios from "axios"; // Added Axios to talk to your backend
+import axiosInstance from "../api/axiosInstance";// Added Axios to talk to your backend
 import {
   Plus,
   CalendarDays,
@@ -32,7 +32,7 @@ const [editDate, setEditDate] = useState("");
   const fetchTasks = async () => {
     try {
       // Call your GET /api/tasks endpoint
-      const response = await axios.get("http://localhost:5000/api/tasks");
+      const response = await axiosInstance.get("/tasks");
       
       // Map your MongoDB database fields to match this UI's exact needs
       const realTasks = response.data.map((t) => ({
@@ -103,7 +103,7 @@ const [editDate, setEditDate] = useState("");
 
     // 3. Silently update the database in the background
     try {
-      await axios.put(`http://localhost:5000/api/tasks/${id}`, {
+      await axiosInstance.put(`/tasks/${id}`, {
         status: newStatus,
       });
     } catch (error) {
@@ -123,7 +123,7 @@ const [editDate, setEditDate] = useState("");
 
     try {
       // 1. Send data to your POST endpoint
-await axios.post("http://localhost:5000/api/tasks", {
+await axiosInstance.post("/tasks", {
   title: newTask.title.trim(),
   dueDate: new Date(newTask.due), // FIX
   status: "Pending",
@@ -542,9 +542,9 @@ await axios.post("http://localhost:5000/api/tasks", {
 
         if(!window.confirm("Delete this note?")) return;
 
-        await axios.delete(
-          `http://localhost:5000/api/tasks/${selectedTask.id}/note/${note._id}`
-        );
+        await axiosInstance.delete(
+  `/tasks/${selectedTask.id}/note/${note._id}`
+);
 
         fetchTasks();
 
@@ -587,10 +587,10 @@ await axios.post("http://localhost:5000/api/tasks", {
 
             if(!noteText) return;
 
-            await axios.post(
-              `http://localhost:5000/api/tasks/${selectedTask.id}/note`,
-              { text: noteText }
-            );
+            await axiosInstance.post(
+  `/tasks/${selectedTask.id}/note`,
+  { text: noteText }
+);
 
             setNoteText("");
 
