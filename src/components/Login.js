@@ -119,36 +119,26 @@ const handleSubmit = async (e) => {
               {isSignUp ? 'Register your account details' : 'Sign in to your dashboard'}
             </p>
             
-            {/* ROLE SELECTOR */}
-            <div style={{ display: 'flex', width: '100%', gap: '12px', marginBottom: '20px' }}>
-<button
-  type="button"
-  onClick={() => {
-    if (isSignUp) {
-      setRole("sales");
-    } else {
-      setLoginType("sales");
-    }
-  }}
-  style={roleButtonStyle("sales")}
->
-  Employee
-</button>
+            {/* ROLE SELECTOR - Only show for Login */}
+            {!isSignUp && (
+              <div style={{ display: 'flex', width: '100%', gap: '12px', marginBottom: '20px' }}>
+                <button
+                  type="button"
+                  onClick={() => setLoginType("sales")}
+                  style={roleButtonStyle("sales")}
+                >
+                  Employee
+                </button>
 
-<button
-  type="button"
-  onClick={() => {
-    if (isSignUp) {
-      setRole("admin");
-    } else {
-      setLoginType("admin");
-    }
-  }}
-  style={roleButtonStyle("admin")}
->
-  Admin
-</button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => setLoginType("admin")}
+                  style={roleButtonStyle("admin")}
+                >
+                  Admin
+                </button>
+              </div>
+            )}
 
             {error && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: '700', marginBottom: '10px' }}>{error}</p>}
 
