@@ -8,6 +8,7 @@ const ProjectsPage = () => {
 
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
 const [editingClient, setEditingClient] = useState(false);
@@ -108,6 +109,25 @@ const [form, setForm] = useState({
 
   if (loading) return <div className="p-8">Loading...</div>;
   if (!client) return <div className="p-8">Client not found</div>;
+// 🔹 CLIENT REVENUE SUMMARY
+
+const totalProjects = client.projects?.length || 0;
+
+const totalRevenue =
+  client.projects?.reduce((sum, p) => sum + (p.totalPayment || 0), 0) || 0;
+
+const receivedAmount =
+  client.projects?.reduce((sum, p) => {
+    const paid =
+      p.installments
+        ?.filter((i) => i.paid)
+        .reduce((s, i) => s + i.amount, 0) || 0;
+
+    return sum + paid;
+  }, 0) || 0;
+
+const pendingAmount = totalRevenue - receivedAmount;
+  
 const handleDeleteClient = async () => {
   if (!window.confirm("Are you sure you want to delete this client?")) return;
 
@@ -138,6 +158,15 @@ const openEdit = (project) => {
 };
 
 
+const totalValue =
+  client.projects?.reduce((sum, project) => {
+    return sum + (project.totalPayment || 0);
+  }, 0) || 0;
+
+const remainingRevenue = totalValue - totalRevenue;
+
+const progress =
+  totalValue > 0 ? (totalRevenue / totalValue) * 100 : 0;
 return (
   <div className="p-10 bg-slate-50 min-h-screen">
 
@@ -155,10 +184,41 @@ return (
 
   {/* LEFT SIDE - CLIENT INFO */}
   <div>
-    <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-      {client.name}
-    </h1>
+<h1 className="text-4xl font-black text-slate-900 tracking-tight mb-8">
+  {client.name}
+</h1>
+{/* 🔹 PROJECT REVENUE SUMMARY */}
+<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
 
+  <div className="bg-white p-6 rounded-2xl shadow border">
+    <p className="text-xs text-slate-400">Projects</p>
+    <p className="text-2xl font-black text-slate-900">
+      {totalProjects}
+    </p>
+  </div>
+
+  <div className="bg-white p-6 rounded-2xl shadow border">
+    <p className="text-xs text-slate-400">Total Revenue</p>
+    <p className="text-2xl font-black text-slate-900">
+      ₹{totalRevenue}
+    </p>
+  </div>
+
+  <div className="bg-white p-6 rounded-2xl shadow border">
+    <p className="text-xs text-slate-400">Received</p>
+    <p className="text-2xl font-black text-emerald-600">
+      ₹{receivedAmount}
+    </p>
+  </div>
+
+  <div className="bg-white p-6 rounded-2xl shadow border">
+    <p className="text-xs text-slate-400">Pending</p>
+    <p className="text-2xl font-black text-red-600">
+      ₹{pendingAmount}
+    </p>
+  </div>
+
+</div>
     <div className="mt-4 space-y-1 text-sm text-slate-500">
       <p>Email: {client.email}</p>
       <p>CEO: {client.ceoName || "—"}</p>
@@ -275,47 +335,54 @@ return (
       : "border border-slate-200"
   }`}
 />
+<div className="grid grid-cols-3 gap-4">
 
-        <div className="grid grid-cols-3 gap-4">
-<input
-  name="phase1Percent"
-  type="number"
-              placeholder="Advance %"
-  value={form.phase1Percent}
-  onChange={handleChange}
-  disabled={editingProject}
-  className={`p-3 rounded-xl ${
-    editingProject
-      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-      : "border border-slate-200"
-  }`}
-/>
-<input
-  name="phase1Percent"
-  type="number"
-              placeholder="Middle %"
-  value={form.phase1Percent}
-  onChange={handleChange}
-  disabled={editingProject}
-  className={`p-3 rounded-xl ${
-    editingProject
-      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-      : "border border-slate-200"
-  }`}
-/><input
-  name="phase1Percent"
-  type="number"
-              placeholder="Deployment %"
-  value={form.phase1Percent}
-  onChange={handleChange}
-  disabled={editingProject}
-  className={`p-3 rounded-xl ${
-    editingProject
-      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-      : "border border-slate-200"
-  }`}
-/>
-        </div>
+  {/* ADVANCE */}
+  <input
+    name="phase1Percent"
+    type="number"
+    placeholder="Advance %"
+    value={form.phase1Percent}
+    onChange={handleChange}
+    disabled={editingProject}
+    className={`p-3 rounded-xl ${
+      editingProject
+        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+        : "border border-slate-200"
+    }`}
+  />
+
+  {/* MIDDLE */}
+  <input
+    name="phase2Percent"
+    type="number"
+    placeholder="Middle %"
+    value={form.phase2Percent}
+    onChange={handleChange}
+    disabled={editingProject}
+    className={`p-3 rounded-xl ${
+      editingProject
+        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+        : "border border-slate-200"
+    }`}
+  />
+
+  {/* DEPLOYMENT */}
+  <input
+    name="phase3Percent"
+    type="number"
+    placeholder="Deployment %"
+    value={form.phase3Percent}
+    onChange={handleChange}
+    disabled={editingProject}
+    className={`p-3 rounded-xl ${
+      editingProject
+        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+        : "border border-slate-200"
+    }`}
+  />
+
+</div>
 
         <input
           name="deadline"
@@ -334,143 +401,188 @@ return (
       </div>
     )}
 
-    {/* 🔹 PROJECT LIST */}
-    <h2 className="text-2xl font-black text-slate-900 mb-6">
-      Projects
-    </h2>
+   {/* 🔹 PROJECT LIST */}
+<h2 className="text-2xl font-black text-slate-900 mb-6">
+  Projects
+</h2>
 
-    {client.projects?.length === 0 ? (
-      <div className="bg-white p-12 rounded-3xl border border-dashed border-slate-300 text-center text-slate-400">
-        No projects added yet.
-      </div>
-    ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {client.projects.map((project) => {
-
-          const paidTotal =
-  project.installments
-    ?.filter(i => i.paid)
-    .reduce((sum, i) => sum + i.amount, 0) || 0;
-
-const allPaid = paidTotal >= project.totalPayment;
-
-          const isOverdue =
-            project.deadline &&
-            new Date(project.deadline) < new Date() &&
-            !allPaid;
-
-          let status = "Active";
-          if (allPaid) status = "Completed";
-          if (isOverdue) status = "Overdue";
-
-          return (
-            <div
-              key={project._id}
-              className={`relative rounded-3xl p-1 transition-all ${
-                isOverdue
-                  ? "bg-red-500/10"
-                  : allPaid
-                  ? "bg-emerald-500/10"
-                  : "bg-slate-900/5"
-              }`}
-            >
-              <div className="bg-white rounded-3xl p-6 shadow-md border border-slate-100">
-
-                {/* HEADER */}
-                <div className="flex justify-between items-start mb-5">
-                  <div>
-                    <h3 className="text-xl font-black text-slate-900">
-                      {project.name}
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Handled by {project.handledBy}
-                    </p>
-                  </div>
-
-                  <span
-                    className={`px-3 py-1 text-[10px] font-black rounded-full ${
-                      status === "Completed"
-                        ? "bg-emerald-500 text-white"
-                        : status === "Overdue"
-                        ? "bg-red-600 text-white"
-                        : "bg-yellow-400 text-black"
-                    }`}
-                  >
-                    {status}
-                  </span>
-                </div>
-
-                {/* PAYMENT BLOCK */}
-                <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
-                  <p className="text-sm font-bold text-slate-800">
-                    Total: ₹{project.totalPayment}
-                  </p>
-
-                  {project.installments?.map((inst, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-center text-xs border-t pt-2"
-                    >
-                      <span>
-                        {inst.phase} ({inst.percentage}%)
-                      </span>
-
-                      <span className="font-bold">
-                        ₹{inst.amount}
-                      </span>
-
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] ${
-                          inst.paid
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-red-100 text-red-600"
-                        }`}
-                      >
-                        {inst.paid ? "Paid" : "Pending"}
-                      </span>
-                    </div>
-                  ))}
-
-                  <p className="text-xs text-slate-400 pt-2 border-t">
-                    Deadline:{" "}
-                    {project.deadline
-                      ? new Date(project.deadline).toDateString()
-                      : "Not Set"}
-                  </p>
-                </div>
-
-                {/* FOOTER */}
-<div className="flex justify-end gap-6 mt-5 text-xs font-bold">
-
-  <button
-    onClick={() => navigate(`/project/${project._id}`)}
-    className="text-blue-600 hover:underline"
-  >
-    View
-  </button>
-
-  <button
-    onClick={() => openEdit(project)}
-    className="text-yellow-600 hover:underline"
-  >
-    Edit
-  </button>
-
-  <button
-    onClick={() => handleDelete(project._id)}
-    className="text-red-600 hover:underline"
-  >
-    Delete
-  </button>
-
+{/* 🔎 SEARCH */}
+<div className="mb-6">
+  <input
+    type="text"
+    placeholder="Search projects..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="w-full md:w-80 p-3 border border-slate-200 rounded-xl"
+  />
 </div>
 
+{client.projects?.length === 0 ? (
+  <div className="bg-white p-12 rounded-3xl border border-dashed border-slate-300 text-center text-slate-400">
+    No projects added yet.
+  </div>
+) : (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+    {client.projects
+      .filter(project =>
+        project.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .map((project) => {
+
+        const paidTotal =
+          project.installments
+            ?.filter(i => i.paid)
+            .reduce((sum, i) => sum + i.amount, 0) || 0;
+
+        const allPaid = paidTotal >= project.totalPayment;
+
+        const progress =
+          project.totalPayment > 0
+            ? (paidTotal / project.totalPayment) * 100
+            : 0;
+
+        const isOverdue =
+          project.deadline &&
+          new Date(project.deadline) < new Date() &&
+          !allPaid;
+
+        let status = "Active";
+        if (allPaid) status = "Completed";
+        if (isOverdue) status = "Overdue";
+
+        return (
+          <div
+            key={project._id}
+            className={`relative rounded-3xl p-1 transition-all ${
+              isOverdue
+                ? "bg-red-500/10"
+                : allPaid
+                ? "bg-emerald-500/10"
+                : "bg-slate-900/5"
+            }`}
+          >
+
+            <div className="bg-white rounded-3xl p-6 shadow-md border border-slate-100">
+
+              {/* HEADER */}
+              <div className="flex justify-between items-start mb-5">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900">
+                    {project.name}
+                  </h3>
+
+                  <p className="text-xs text-slate-400 mt-1">
+                    Handled by {project.handledBy}
+                  </p>
+                </div>
+
+                <span
+                  className={`px-3 py-1 text-[10px] font-black rounded-full ${
+                    status === "Completed"
+                      ? "bg-emerald-500 text-white"
+                      : status === "Overdue"
+                      ? "bg-red-600 text-white"
+                      : "bg-yellow-400 text-black"
+                  }`}
+                >
+                  {status}
+                </span>
               </div>
+
+              {/* OVERDUE WARNING */}
+              {isOverdue && (
+                <div className="mb-3 bg-red-100 text-red-600 text-xs px-3 py-2 rounded-lg font-bold">
+                  ⚠ Payment overdue
+                </div>
+              )}
+
+              {/* PAYMENT BLOCK */}
+              <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
+                <p className="text-sm font-bold text-slate-800">
+                  Total: ₹{project.totalPayment}
+                </p>
+
+                {project.installments?.map((inst, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center text-xs border-t pt-2"
+                  >
+                    <span>
+                      {inst.phase} ({inst.percentage}%)
+                    </span>
+
+                    <span className="font-bold">
+                      ₹{inst.amount}
+                    </span>
+
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] ${
+                        inst.paid
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-red-100 text-red-600"
+                      }`}
+                    >
+                      {inst.paid ? "Paid" : "Pending"}
+                    </span>
+                  </div>
+                ))}
+
+                <p className="text-xs text-slate-400 pt-2 border-t">
+                  Deadline:{" "}
+                  {project.deadline
+                    ? new Date(project.deadline).toDateString()
+                    : "Not Set"}
+                </p>
+              </div>
+
+              {/* PROGRESS BAR */}
+              <div className="mt-4">
+                <div className="w-full bg-slate-200 rounded-full h-2">
+                  <div
+                    className="bg-green-500 h-2 rounded-full"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+
+                <p className="text-xs text-slate-400 mt-1">
+                  {progress.toFixed(0)}% paid
+                </p>
+              </div>
+
+              {/* FOOTER */}
+              <div className="flex justify-end gap-6 mt-5 text-xs font-bold">
+
+                <button
+                  onClick={() => navigate(`/project/${project._id}`)}
+                  className="text-blue-600 hover:underline"
+                >
+                  View
+                </button>
+
+                <button
+                  onClick={() => openEdit(project)}
+                  className="text-yellow-600 hover:underline"
+                >
+                  Edit
+                </button>
+
+                <button
+                  onClick={() => handleDelete(project._id)}
+                  className="text-red-600 hover:underline"
+                >
+                  Delete
+                </button>
+
+              </div>
+
             </div>
-          );
-        })}
-      </div>
-    )}
+          </div>
+        );
+      })}
+
+  </div>
+)}
   </div>
 );}
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axiosInstance from "../api/axiosInstance";
+import jsPDF from "jspdf";
 import { useParams, useNavigate } from "react-router-dom";
 const ProjectDetailsPage = () => {
   const { projectId } = useParams();
@@ -51,7 +52,18 @@ const undoInstallment = async (index) => {
   fetchProject();
 };
 
-      
+      const downloadInvoice = () => {
+  const doc = new jsPDF();
+
+  doc.text(`Project: ${project.name}`, 10, 10);
+  doc.text(`Client Payment Summary`, 10, 20);
+
+  doc.text(`Total: ₹${project.totalPayment}`, 10, 40);
+  doc.text(`Paid: ₹${paidTotal}`, 10, 50);
+  doc.text(`Remaining: ₹${remaining}`, 10, 60);
+
+  doc.save(`${project.name}-invoice.pdf`);
+};
   return (
     <div className="p-10 bg-slate-50 min-h-screen">
 <div className="mb-6">
@@ -64,6 +76,12 @@ const undoInstallment = async (index) => {
 </div>
       {/* HEADER */}
       <div className="mb-10">
+        <button
+  onClick={downloadInvoice}
+  className="bg-slate-900 text-white px-4 py-2 rounded-xl mt-6"
+>
+  Download Invoice
+</button>
         <h1 className="text-4xl font-black text-slate-900">
           {project.name}
         </h1>
@@ -117,7 +135,24 @@ const undoInstallment = async (index) => {
         <h2 className="text-xl font-black mb-6 text-slate-900">
           Installments
         </h2>
+<h3 className="text-lg font-bold mt-8 mb-3">
+Payment History
+</h3>
 
+{project.installments
+  ?.filter(i => i.paid)
+  .map((inst, index) => (
+    <div
+      key={index}
+      className="border-l-4 border-green-500 pl-3 py-2 mb-2"
+    >
+      <p className="font-bold">{inst.phase}</p>
+      <p className="text-xs text-slate-500">
+        ₹{inst.amount} paid on{" "}
+        {new Date(inst.paidAt).toDateString()}
+      </p>
+    </div>
+))}
         {project.installments?.map((inst, index) => (
           <div
             key={index}
