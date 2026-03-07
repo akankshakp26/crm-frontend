@@ -12,6 +12,9 @@ import Pipeline from './pages/Pipeline';
 import ClientsPage from './pages/ClientsPage';
 import Journey from './pages/Journey';
 import TasksPage from './pages/TasksPage';
+import ProjectsPage from './pages/ProjectsPage';
+import ProjectDetailsPage from './pages/ProjectDetailsPage';
+
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
@@ -51,7 +54,9 @@ function App() {
                 <Route path="/" element={<Dashboard leads={leads} />} />
                 <Route path="/leads" element={<LeadsPage leads={filteredLeads} setLeads={setLeads} setSelectedLead={setSelectedLead} user={user} refresh={fetchLeads} />} />
                 <Route path="/pipeline" element={<Pipeline leads={leads} setLeads={setLeads} refresh={fetchLeads} />} />
-                <Route path="/clients" element={<ClientsPage leads={leads.filter(l => l.status === 'Confirmed')} />} />
+                <Route path="/clients" element={<ClientsPage />} />
+<Route path="/projects/:clientId" element={<ProjectsPage />} />
+<Route path="/project/:projectId" element={<ProjectDetailsPage />} />
                 <Route path="/journey" element={<Journey selectedLead={selectedLead} />} />
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/profile" element={<Profile user={user} setUser={setUser} />} />
