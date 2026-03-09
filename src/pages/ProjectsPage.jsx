@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
-
 const ProjectsPage = () => {
   const { clientId } = useParams();
   const navigate = useNavigate();
@@ -27,7 +26,16 @@ const [form, setForm] = useState({
   phase3Percent: "",
   deadline: ""
 });
+const total = Number(form.totalPayment) || 0;
 
+const advanceAmount =
+  (Number(form.phase1Percent) / 100) * total || 0;
+
+const middleAmount =
+  (Number(form.phase2Percent) / 100) * total || 0;
+
+const deploymentAmount =
+  (Number(form.phase3Percent) / 100) * total || 0;
   // 🔹 Fetch client with projects
  const fetchClient = async () => {
   try {
@@ -60,8 +68,14 @@ const [form, setForm] = useState({
   };
 
   // 🔹 Create new project
- const handleSubmit = async () => {
-  if (!form.name) return alert("Project name is required");
+
+const handleSubmit = async () => {
+  console.log("Save button clicked", form, clientId);
+
+  if (!form.name) {
+    alert("Project name is required");
+    return;
+  }
 
   try {
     if (editingProject) {
@@ -71,8 +85,20 @@ const [form, setForm] = useState({
       );
       setEditingProject(null);
     } else {
+      console.log("Sending data:", {
+  ...form,
+  totalPayment: Number(form.totalPayment),
+  phase1Percent: Number(form.phase1Percent),
+  phase2Percent: Number(form.phase2Percent),
+  phase3Percent: Number(form.phase3Percent),
+  clientId
+});
       await axiosInstance.post("/projects", {
         ...form,
+        totalPayment: Number(form.totalPayment),
+        phase1Percent: Number(form.phase1Percent),
+        phase2Percent: Number(form.phase2Percent),
+        phase3Percent: Number(form.phase3Percent),
         clientId
       });
     }
@@ -89,11 +115,11 @@ const [form, setForm] = useState({
 
     setShowForm(false);
     fetchClient();
+
   } catch (err) {
-    console.error("Save failed:", err);
+    console.error("Save failed:", err.response?.data || err);
   }
 };
-
   // 🔹 Delete project
   const handleDelete = async (projectId) => {
     if (!window.confirm("Are you sure you want to delete this project?"))
@@ -167,9 +193,35 @@ const remainingRevenue = totalValue - totalRevenue;
 
 const progress =
   totalValue > 0 ? (totalRevenue / totalValue) * 100 : 0;
+
+const overdueProjects = client.projects?.filter(
+  p =>
+    p.deadline &&
+    new Date(p.deadline) < new Date() &&
+    p.installments?.some(i => !i.paid)
+);
+
+const revenueData = client.projects?.map(p => ({
+  name: p.name,
+  revenue: p.totalPayment
+}));
+
+
 return (
   <div className="p-10 bg-slate-50 min-h-screen">
+{overdueProjects?.length > 0 && (
+  <div className="bg-red-50 border border-red-200 p-4 rounded-xl mb-6">
+    <h4 className="font-bold text-red-700 mb-2">
+      ⚠ Overdue Payments
+    </h4>
 
+    {overdueProjects.map(p => (
+      <p key={p._id} className="text-sm text-red-600">
+        {p.name} payment overdue
+      </p>
+    ))}
+  </div>
+)}
     <div className="mb-6">
   <button
     onClick={() => navigate("/clients")}
@@ -230,7 +282,6 @@ return (
       </p>
     </div>
   </div>
-
   {/* RIGHT SIDE - BUTTONS */}
   <div className="flex gap-4">
 
@@ -338,50 +389,54 @@ return (
 <div className="grid grid-cols-3 gap-4">
 
   {/* ADVANCE */}
-  <input
-    name="phase1Percent"
-    type="number"
-    placeholder="Advance %"
-    value={form.phase1Percent}
-    onChange={handleChange}
-    disabled={editingProject}
-    className={`p-3 rounded-xl ${
-      editingProject
-        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-        : "border border-slate-200"
-    }`}
-  />
+  <div>
+    <input
+      name="phase1Percent"
+      type="number"
+      placeholder="Advance %"
+      value={form.phase1Percent}
+      onChange={handleChange}
+      className="p-3 border border-slate-200 rounded-xl w-full"
+    />
+    <p className="text-xs text-slate-500 mt-1">
+      Amount: ₹{advanceAmount.toFixed(0)}
+    </p>
+  </div>
 
   {/* MIDDLE */}
-  <input
-    name="phase2Percent"
-    type="number"
-    placeholder="Middle %"
-    value={form.phase2Percent}
-    onChange={handleChange}
-    disabled={editingProject}
-    className={`p-3 rounded-xl ${
-      editingProject
-        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-        : "border border-slate-200"
-    }`}
-  />
+  <div>
+    <input
+      name="phase2Percent"
+      type="number"
+      placeholder="Middle %"
+      value={form.phase2Percent}
+      onChange={handleChange}
+      className="p-3 border border-slate-200 rounded-xl w-full"
+    />
+    <p className="text-xs text-slate-500 mt-1">
+      Amount: ₹{middleAmount.toFixed(0)}
+    </p>
+  </div>
 
   {/* DEPLOYMENT */}
-  <input
-    name="phase3Percent"
-    type="number"
-    placeholder="Deployment %"
-    value={form.phase3Percent}
-    onChange={handleChange}
-    disabled={editingProject}
-    className={`p-3 rounded-xl ${
-      editingProject
-        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-        : "border border-slate-200"
-    }`}
-  />
-
+  <div>
+    <input
+      name="phase3Percent"
+      type="number"
+      placeholder="Deployment %"
+      value={form.phase3Percent}
+      onChange={handleChange}
+      className="p-3 border border-slate-200 rounded-xl w-full"
+    />
+    <p className="text-xs text-slate-500 mt-1">
+      Amount: ₹{deploymentAmount.toFixed(0)}
+    </p>
+  </div>
+<p className="text-sm text-slate-600 mt-2">
+Total: {Number(form.phase1Percent || 0) +
+Number(form.phase2Percent || 0) +
+Number(form.phase3Percent || 0)}%
+</p>
 </div>
 
         <input
@@ -406,7 +461,7 @@ return (
   Projects
 </h2>
 
-{/* 🔎 SEARCH */}
+{/* SEARCH */}
 <div className="mb-6">
   <input
     type="text"
@@ -516,15 +571,21 @@ return (
                       ₹{inst.amount}
                     </span>
 
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] ${
-                        inst.paid
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-red-100 text-red-600"
-                      }`}
-                    >
-                      {inst.paid ? "Paid" : "Pending"}
-                    </span>
+<button
+  onClick={async () => {
+    await axiosInstance.put(
+      `/projects/${project._id}/installment/${index}`
+    );
+    fetchClient();
+  }}
+  className={`px-2 py-1 rounded text-[10px] font-bold ${
+    inst.paid
+      ? "bg-emerald-100 text-emerald-700"
+      : "bg-red-100 text-red-600"
+  }`}
+>
+  {inst.paid ? "Paid ✓" : "Mark Paid"}
+</button>
                   </div>
                 ))}
 
@@ -534,6 +595,7 @@ return (
                     ? new Date(project.deadline).toDateString()
                     : "Not Set"}
                 </p>
+                
               </div>
 
               {/* PROGRESS BAR */}

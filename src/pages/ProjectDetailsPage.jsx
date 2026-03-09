@@ -17,13 +17,16 @@ const ProjectDetailsPage = () => {
   };
 
   const markInstallmentPaid = async (index) => {
-    await axiosInstance.put("/projects/installment/pay", {
-      projectId,
-      installmentIndex: index
-    });
+  try {
+    await axiosInstance.put(
+      `/projects/${projectId}/installment/${index}`
+    );
 
-    fetchProject();
-  };
+    fetchProject(); // refresh project
+  } catch (error) {
+    console.error("Payment update failed:", error);
+  }
+};
 
   if (!project) return <div className="p-10">Loading...</div>;
 
@@ -44,12 +47,16 @@ const undoInstallment = async (index) => {
   if (!window.confirm("Are you sure you want to undo this payment?"))
     return;
 
-  await axiosInstance.put("/projects/installment/undo", {
-    projectId,
-    installmentIndex: index
-  });
+  try {
+    await axiosInstance.put("/projects/installment/undo", {
+      projectId,
+      installmentIndex: index
+    });
 
-  fetchProject();
+    fetchProject();
+  } catch (error) {
+    console.error("Undo payment failed:", error);
+  }
 };
 
       const downloadInvoice = () => {
