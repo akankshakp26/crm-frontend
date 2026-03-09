@@ -1,17 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
+
 const ProjectsPage = () => {
   const { clientId } = useParams();
   const navigate = useNavigate();
-
+const [services, setServices] = useState([]);
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
 const [editingClient, setEditingClient] = useState(false);
-
+const [editingService, setEditingService] = useState(null);
 const [clientForm, setClientForm] = useState({
   ceoName: "",
   associatedFrom: ""
@@ -26,6 +27,19 @@ const [form, setForm] = useState({
   phase3Percent: "",
   deadline: ""
 });
+
+const [showAddMenu, setShowAddMenu] = useState(false);
+const dropdownRef = useRef(null);
+const [showServiceForm, setShowServiceForm] = useState(false);
+
+const [serviceForm, setServiceForm] = useState({
+  serviceName: "",
+  createdDate: "",
+  monthlyAmount: "",
+  monthlyPayDate: "",
+  handledBy: ""
+});
+
 const total = Number(form.totalPayment) || 0;
 
 const advanceAmount =
@@ -58,10 +72,18 @@ const deploymentAmount =
     setLoading(false);
   }
 };
-  useEffect(() => {
-    fetchClient();
-  }, [clientId]);
-
+useEffect(() => {
+  fetchClient();
+  fetchServices();
+}, [clientId]);
+const fetchServices = async () => {
+  try {
+    const res = await axiosInstance.get(`/services/${clientId}`);
+    setServices(res.data);
+  } catch (err) {
+    console.error("Error fetching services:", err);
+  }
+};
   // 🔹 Handle input change
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -120,6 +142,19 @@ const handleSubmit = async () => {
     console.error("Save failed:", err.response?.data || err);
   }
 };
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setShowAddMenu(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
   // 🔹 Delete project
   const handleDelete = async (projectId) => {
     if (!window.confirm("Are you sure you want to delete this project?"))
@@ -205,7 +240,89 @@ const revenueData = client.projects?.map(p => ({
   name: p.name,
   revenue: p.totalPayment
 }));
+const handleServiceSubmit = async () => {
 
+  if (!serviceForm.serviceName) {
+    alert("Service name is required");
+    return;
+  }
+
+  if (!serviceForm.monthlyPayDate) {
+    alert("Please select monthly payment date");
+    return;
+  }
+
+  try {
+
+    const paymentDay = new Date(serviceForm.monthlyPayDate).getDate();
+
+    const serviceData = {
+      serviceName: serviceForm.serviceName,
+      createdDate: serviceForm.createdDate,
+      monthlyAmount: Number(serviceForm.monthlyAmount),
+      monthlyPayDate: serviceForm.monthlyPayDate,   // REQUIRED
+      paymentDay,                                   // REQUIRED
+      handledBy: serviceForm.handledBy,
+      clientId
+    };
+
+    console.log("Sending service data:", serviceData);
+
+    if (editingService) {
+
+      await axiosInstance.put(
+        `/services/${editingService._id}`,
+        serviceData
+      );
+
+      setEditingService(null);
+
+    } else {
+
+      await axiosInstance.post("/services", serviceData);
+
+    }
+
+    setServiceForm({
+      serviceName: "",
+      createdDate: "",
+      monthlyAmount: "",
+      monthlyPayDate: "",
+      handledBy: ""
+    });
+
+    setShowServiceForm(false);
+    fetchServices();
+
+  } catch (err) {
+    console.error("Service save failed:", err.response?.data || err);
+  }
+};
+
+const handleDeleteService = async (serviceId) => {
+  if (!window.confirm("Are you sure you want to delete this service?"))
+    return;
+
+  try {
+    await axiosInstance.delete(`/services/${serviceId}`);
+    fetchServices();
+  } catch (err) {
+    console.error("Delete service failed:", err);
+  }
+};
+const handleEditService = (service) => {
+  setEditingService(service);
+
+  setServiceForm({
+    serviceName: service.serviceName,
+    createdDate: service.createdDate?.substring(0,10),
+    monthlyAmount: service.monthlyAmount,
+    monthlyPayDate: service.monthlyPayDate?.substring(0,10),
+    handledBy: service.handledBy
+  });
+
+  setShowServiceForm(true);
+};
 
 return (
   <div className="p-10 bg-slate-50 min-h-screen">
@@ -341,16 +458,167 @@ return (
   </div>
 )}
     {/* 🔹 ADD PROJECT BUTTON */}
-    <div className="mb-8">
-      <button
-        onClick={() => setShowForm(!showForm)}
-        className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-sm font-black shadow-lg transition"
-      >
-        + Add Project
-      </button>
-    </div>
+<div ref={dropdownRef} className="relative mb-8">
 
+<button
+  onClick={() => {
+  setShowAddMenu(!showAddMenu);
+  setShowForm(false);
+  setShowServiceForm(false);
+}}
+  className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-sm font-black shadow-lg transition"
+>
+  + Add ▼
+</button>
+
+{showAddMenu && (
+  <div className="absolute mt-2 bg-white border rounded-xl shadow w-40">
+
+<button
+  onClick={() => {
+    setShowForm(true);
+    setShowServiceForm(false);
+    setShowAddMenu(false);
+  }}
+  className="block w-full text-left px-4 py-2 hover:bg-slate-100"
+>
+  Project
+</button>
+
+<button
+  onClick={() => {
+    setShowServiceForm(true);
+    setShowForm(false);
+    setShowAddMenu(false);
+  }}
+  className="block w-full text-left px-4 py-2 hover:bg-slate-100"
+>
+  Service
+</button>
+
+  </div>
+)}
+
+</div>
     {/* 🔹 PROJECT FORM */}
+    {showServiceForm && (
+  <div className="bg-white p-8 rounded-3xl shadow-md border border-slate-100 mb-12 space-y-4">
+
+<h3 className="text-lg font-black text-slate-800 mb-4">
+  {editingService ? "Edit Service" : "Create Service"}
+</h3>
+     {/* Service Name */}
+  <div>
+    <label className="text-sm font-semibold text-slate-600">
+      Service Name
+    </label>
+
+    <input
+      placeholder="Example: Website Hosting"
+      value={serviceForm.serviceName}
+      onChange={(e) =>
+        setServiceForm({ ...serviceForm, serviceName: e.target.value })
+      }
+      className="w-full p-3 border border-slate-200 rounded-xl mt-1"
+    />
+  </div>
+
+  {/* Service Start Date */}
+  <div>
+    <label className="text-sm font-semibold text-slate-600">
+      Service Start Date
+    </label>
+
+    <input
+      type="date"
+      value={serviceForm.createdDate}
+      onChange={(e) =>
+        setServiceForm({ ...serviceForm, createdDate: e.target.value })
+      }
+      className="w-full p-3 border border-slate-200 rounded-xl mt-1"
+    />
+
+
+  </div>
+
+  {/* Monthly Payment Amount */}
+  <div>
+    <label className="text-sm font-semibold text-slate-600">
+      Monthly Payment Amount (₹)
+    </label>
+
+    <input
+      type="number"
+      placeholder="Example: 5000"
+      value={serviceForm.monthlyAmount}
+      onChange={(e) =>
+        setServiceForm({ ...serviceForm, monthlyAmount: e.target.value })
+      }
+      className="w-full p-3 border border-slate-200 rounded-xl mt-1"
+    />
+
+    <p className="text-xs text-slate-400 mt-1">
+      Amount the client must pay every month.
+    </p>
+  </div>
+
+  {/* Monthly Payment Date */}
+  <div>
+    <label className="text-sm font-semibold text-slate-600">
+      Monthly Payment Date
+    </label>
+
+    <input
+      type="date"
+      value={serviceForm.monthlyPayDate}
+      onChange={(e) =>
+        setServiceForm({ ...serviceForm, monthlyPayDate: e.target.value })
+      }
+      className="w-full p-3 border border-slate-200 rounded-xl mt-1"
+    />
+
+    <p className="text-xs text-slate-400 mt-1">
+      Client must pay on this date every month.
+    </p>
+  </div>
+
+  {/* Handled By */}
+  <div>
+    <label className="text-sm font-semibold text-slate-600">
+      Handled By
+    </label>
+
+    <input
+      placeholder="Employee name"
+      value={serviceForm.handledBy}
+      onChange={(e) =>
+        setServiceForm({ ...serviceForm, handledBy: e.target.value })
+      }
+      className="w-full p-3 border border-slate-200 rounded-xl mt-1"
+    />
+  </div>
+
+  {/* Buttons */}
+  <div className="flex gap-4">
+
+    <button
+      onClick={handleServiceSubmit}
+      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition"
+    >
+      {editingService ? "Update Service" : "Save Service"}
+    </button>
+
+    <button
+      onClick={() => setShowServiceForm(false)}
+      className="px-6 py-3 bg-slate-300 hover:bg-slate-400 rounded-xl font-bold"
+    >
+      Cancel
+    </button>
+
+  </div>
+
+</div>
+)}
     {showForm && (
       <div className="bg-white p-8 rounded-3xl shadow-md border border-slate-100 mb-12 space-y-4">
 
@@ -374,78 +642,114 @@ return (
           className="w-full p-3 border border-slate-200 rounded-xl"
         />
 
-<input
-  name="totalPayment"
-  type="number"
-  value={form.totalPayment}
-  onChange={handleChange}
-  disabled={editingProject}
-  className={`w-full p-3 rounded-xl ${
-    editingProject
-      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-      : "border border-slate-200"
-  }`}
-/>
-<div className="grid grid-cols-3 gap-4">
+<div>
+  <label className="text-sm font-semibold text-slate-600">
+    Total Project Amount (₹)
+  </label>
 
-  {/* ADVANCE */}
-  <div>
-    <input
-      name="phase1Percent"
-      type="number"
-      placeholder="Advance %"
-      value={form.phase1Percent}
-      onChange={handleChange}
-      className="p-3 border border-slate-200 rounded-xl w-full"
-    />
-    <p className="text-xs text-slate-500 mt-1">
-      Amount: ₹{advanceAmount.toFixed(0)}
-    </p>
-  </div>
-
-  {/* MIDDLE */}
-  <div>
-    <input
-      name="phase2Percent"
-      type="number"
-      placeholder="Middle %"
-      value={form.phase2Percent}
-      onChange={handleChange}
-      className="p-3 border border-slate-200 rounded-xl w-full"
-    />
-    <p className="text-xs text-slate-500 mt-1">
-      Amount: ₹{middleAmount.toFixed(0)}
-    </p>
-  </div>
-
-  {/* DEPLOYMENT */}
-  <div>
-    <input
-      name="phase3Percent"
-      type="number"
-      placeholder="Deployment %"
-      value={form.phase3Percent}
-      onChange={handleChange}
-      className="p-3 border border-slate-200 rounded-xl w-full"
-    />
-    <p className="text-xs text-slate-500 mt-1">
-      Amount: ₹{deploymentAmount.toFixed(0)}
-    </p>
-  </div>
-<p className="text-sm text-slate-600 mt-2">
-Total: {Number(form.phase1Percent || 0) +
-Number(form.phase2Percent || 0) +
-Number(form.phase3Percent || 0)}%
-</p>
+  <input
+    name="totalPayment"
+    type="number"
+    placeholder="Enter total project amount"
+    value={form.totalPayment}
+    onChange={handleChange}
+    disabled={editingProject}
+    className={`w-full p-3 rounded-xl ${
+      editingProject
+        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+        : "border border-slate-200"
+    }`}
+  />
 </div>
+<div className="mb-6">
 
-        <input
-          name="deadline"
-          type="date"
-          value={form.deadline}
-          onChange={handleChange}
-          className="w-full p-3 border border-slate-200 rounded-xl"
-        />
+  {/* Title */}
+  <label className="text-sm font-semibold text-slate-700">
+    Payment Installments (%)
+  </label>
+
+  <p className="text-xs text-slate-400 mb-3">
+    Split the project payment into phases. Total must equal 100%.
+  </p>
+
+  {/* Installment Inputs */}
+  <div className="grid grid-cols-3 gap-4">
+
+    {/* Advance */}
+    <div>
+      <input
+        name="phase1Percent"
+        type="number"
+        placeholder="Advance %"
+        value={form.phase1Percent}
+        onChange={handleChange}
+        className="w-full p-3 border border-slate-200 rounded-xl"
+      />
+
+      <p className="text-xs text-slate-500 mt-1">
+        Amount: ₹{advanceAmount.toFixed(0)}
+      </p>
+    </div>
+
+    {/* Middle */}
+    <div>
+      <input
+        name="phase2Percent"
+        type="number"
+        placeholder="Middle %"
+        value={form.phase2Percent}
+        onChange={handleChange}
+        className="w-full p-3 border border-slate-200 rounded-xl"
+      />
+
+      <p className="text-xs text-slate-500 mt-1">
+        Amount: ₹{middleAmount.toFixed(0)}
+      </p>
+    </div>
+
+    {/* Deployment */}
+    <div>
+      <input
+        name="phase3Percent"
+        type="number"
+        placeholder="Deployment %"
+        value={form.phase3Percent}
+        onChange={handleChange}
+        className="w-full p-3 border border-slate-200 rounded-xl"
+      />
+
+      <p className="text-xs text-slate-500 mt-1">
+        Amount: ₹{deploymentAmount.toFixed(0)}
+      </p>
+    </div>
+
+  </div>
+
+  {/* Total */}
+  <p className="text-sm text-slate-600 mt-3">
+    Total: {Number(form.phase1Percent || 0) +
+    Number(form.phase2Percent || 0) +
+    Number(form.phase3Percent || 0)}%
+  </p>
+
+</div>
+<div>
+  <label className="text-sm font-semibold text-slate-600">
+    Project Deadline
+  </label>
+
+  <input
+    name="deadline"
+    type="date"
+    value={form.deadline}
+    onChange={handleChange}
+    className="w-full p-3 border border-slate-200 rounded-xl"
+  />
+
+  <p className="text-xs text-slate-400 mt-1">
+    Expected project completion date. Used to track overdue projects.
+  </p>
+</div>
 
         <button
           onClick={handleSubmit}
@@ -455,7 +759,82 @@ Number(form.phase3Percent || 0)}%
         </button>
       </div>
     )}
+<h2 className="text-2xl font-black text-slate-900 mb-6">
+  Services
+</h2>
 
+{services.length === 0 ? (
+  <div className="bg-white p-6 rounded-xl border text-slate-400">
+    No services added yet.
+  </div>
+) : (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+    {services.map((service) => {
+
+      const today = new Date().getDate();
+      const payDay = new Date(service.monthlyPayDate).getDate();
+
+      const isDue = today === payDay;
+
+      const now = new Date();
+      const nextPayment = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        payDay
+      );
+
+      if (now.getDate() > payDay) {
+        nextPayment.setMonth(now.getMonth() + 1);
+      }
+
+      return (
+        <div
+          key={service._id}
+          className="bg-white p-6 rounded-2xl shadow border"
+        >
+          <h3 className="text-lg font-bold">
+            {service.serviceName}
+          </h3>
+
+          <p className="text-sm text-slate-500 mt-1">
+            Handled by {service.handledBy}
+          </p>
+
+          {isDue && (
+            <div className="mt-2 bg-red-100 text-red-600 text-xs px-3 py-2 rounded-lg font-bold">
+              ⚠ Monthly payment due today
+            </div>
+          )}
+
+          <p className="text-sm mt-3">
+            Monthly Amount: ₹{service.monthlyAmount}
+          </p>
+
+          <p className="text-xs text-slate-400">
+            Next Payment: {nextPayment.toDateString()}
+          </p>
+<div className="flex justify-end gap-4 mt-4 text-xs font-bold">
+
+  <button
+    onClick={() => handleEditService(service)}
+    className="text-yellow-600 hover:underline"
+  >
+    Edit
+  </button>
+
+  <button
+    onClick={() => handleDeleteService(service._id)}
+    className="text-red-600 hover:underline"
+  >
+    Delete
+  </button>
+
+</div>
+        </div>
+      );
+    })}
+  </div>
+)}
    {/* 🔹 PROJECT LIST */}
 <h2 className="text-2xl font-black text-slate-900 mb-6">
   Projects
