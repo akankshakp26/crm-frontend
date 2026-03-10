@@ -8,11 +8,11 @@ const LeadsPage = () => {
 const [email, setEmail] = useState("");
   // 🔹 Form states
   const [company, setCompany] = useState("");
-  const [value, setValue] = useState("");
+  const [AmountPaid, setAmountPaid] = useState("");
+  const [remaining, setRemaining] = useState("");
   const [stage, setStage] = useState("Discovery");
 
 const user = JSON.parse(localStorage.getItem("user") || "{}");
-const isAdmin = user.role === "admin";
   // 🔹 Fetch leads
   useEffect(() => {
     const fetchLeads = async () => {
@@ -34,19 +34,21 @@ const isAdmin = user.role === "admin";
 const createLead = async (e) => {
   e.preventDefault();
 
-  try {
+  try { 
     const res = await axiosInstance.post("/leads", {
       name: company,
       email: email,
       status: stage,
-      value: Number(value)
+        AmountPaid: Number(AmountPaid),
+      remaining: Number(remaining)                                        
     });
 
     setLeads([...leads, res.data]);
 
     setCompany("");
     setEmail("");
-    setValue("");
+    setAmountPaid("");
+    setRemaining("");
     setStage("New");
 
   } catch (err) {
@@ -92,9 +94,18 @@ const createLead = async (e) => {
 
   <input
     type="number"
-    placeholder="Value"
-    value={value}
-    onChange={(e) => setValue(e.target.value)}
+    placeholder="Amount Paid"
+    value={AmountPaid}
+    onChange={(e) => setAmountPaid(e.target.value)}
+    required
+  />
+
+  <input
+    type="number"
+    placeholder="Remaining"
+    value={remaining}
+    onChange={(e) => setRemaining(e.target.value)}
+    required
   />
 
   <select
@@ -128,7 +139,8 @@ const createLead = async (e) => {
           >
             <strong>{lead.company}</strong>
             <p>Stage: {lead.stage}</p>
-            <p>Value: ₹{lead.value}</p>
+            <p>Amount Paid: ₹{lead.AmountPaid}</p>
+            <p>Remaining: ₹{lead.remaining}</p>
 
             {user?.role === "admin" && (
               <button

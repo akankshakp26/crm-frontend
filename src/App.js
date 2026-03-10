@@ -28,9 +28,13 @@ function App() {
       const res = await axiosInstance.get("/leads");
       const formatted = res.data.map(l => ({
         id: l._id,
-        company: l.name,
+        company: l.company || l.name,
         email: l.email,
-        value: l.value || 0,
+        username: l.username || "",
+        password: l.password || "",
+        totalAmount: l.totalAmount || 0,
+        amountPaid: l.amountPaid || 0,
+        remaining: l.remaining || 0,
         status: l.status || "New",
         history: l.history || []
       }));
@@ -55,8 +59,8 @@ function App() {
                 <Route path="/leads" element={<LeadsPage leads={filteredLeads} setLeads={setLeads} setSelectedLead={setSelectedLead} user={user} refresh={fetchLeads} />} />
                 <Route path="/pipeline" element={<Pipeline leads={leads} setLeads={setLeads} refresh={fetchLeads} />} />
                 <Route path="/clients" element={<ClientsPage />} />
-<Route path="/projects/:clientId" element={<ProjectsPage />} />
-<Route path="/project/:projectId" element={<ProjectDetailsPage />} />
+                <Route path="/projects/:clientId" element={<ProjectsPage />} />
+                <Route path="/project/:projectId" element={<ProjectDetailsPage />} />
                 <Route path="/journey" element={<Journey selectedLead={selectedLead} />} />
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/profile" element={<Profile user={user} setUser={setUser} />} />
