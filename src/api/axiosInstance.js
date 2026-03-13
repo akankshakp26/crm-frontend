@@ -5,7 +5,6 @@ const axiosInstance = axios.create({
 });
 
 axiosInstance.interceptors.request.use((config) => {
-
   const token = localStorage.getItem("token");
 
   if (token) {
@@ -13,7 +12,6 @@ axiosInstance.interceptors.request.use((config) => {
   }
 
   return config;
-
 });
 
 export default axiosInstance;
