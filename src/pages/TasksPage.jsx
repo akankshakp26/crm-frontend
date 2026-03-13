@@ -25,6 +25,7 @@ const [editDate, setEditDate] = useState("");
   const [newTask, setNewTask] = useState({
     title: "",
     due: "",
+    dueTime: "",
     priority: "Medium",
   });
 
@@ -125,7 +126,8 @@ const [editDate, setEditDate] = useState("");
       // 1. Send data to your POST endpoint
 await axiosInstance.post("/tasks", {
   title: newTask.title.trim(),
-  dueDate: new Date(newTask.due), // FIX
+  dueDate: newTask.due,
+  dueTime: newTask.dueTime,
   status: "Pending",
 });
 
@@ -133,7 +135,12 @@ await axiosInstance.post("/tasks", {
       fetchTasks();
 
       // 3. Reset UI
-      setNewTask({ title: "", due: "", priority: "Medium" });
+      setNewTask({
+  title: "",
+  due: "",
+  dueTime: "",
+  priority: "Medium",
+});
       setOpen(false);
       setActiveTab(isToday(newTask.due) ? "Today" : "Upcoming");
     } catch (error) {
@@ -291,7 +298,7 @@ await axiosInstance.post("/tasks", {
                             <div className="mt-2 flex flex-wrap items-center gap-2">
                               <Badge
                                 icon={<CalendarDays className="h-4 w-4" />}
-                                text={`Due: ${formatDate(t.due)}`}
+                                text={`Due: ${formatDate(t.due)} ${t.dueTime || ""}`}
                                 tone="slate"
                               />
                               <Badge
@@ -379,6 +386,21 @@ await axiosInstance.post("/tasks", {
                   />
                 </div>
 
+              {/* Due Time */}
+  <div>
+    <label className="text-xs font-bold text-slate-500">
+      Due Time
+    </label>
+
+    <input
+      type="time"
+      value={newTask.dueTime}
+      onChange={(e) =>
+        setNewTask((p) => ({ ...p, dueTime: e.target.value }))
+      }
+      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+    />
+  </div>
                 <div>
                   <label className="text-xs font-bold text-slate-500">Priority</label>
                   <select
