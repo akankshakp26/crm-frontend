@@ -1,14 +1,6 @@
 import React, { useState } from "react";
 import {
-  Plus,
-  X,
-  Mail,
-  Building,
-  DollarSign,
-  AlertTriangle,
-  Edit2,
-  User,
-  Lock,
+  Plus, X, Mail, Building, AlertTriangle, Edit2, User, Lock,
 } from "lucide-react";
 import axiosInstance from "../api/axiosInstance";
 import { addActivityLog } from "../utils/activityStore";
@@ -18,9 +10,37 @@ const emptyLead = {
   email: "",
   username: "",
   password: "",
-  totalAmount: "",
-  amountPaid: "",
-  remaining: "",
+};
+
+const emptyErrors = {
+  username: "",
+  password: "",
+};
+
+const InputField = ({ label, icon: Icon, error, ...props }) => (
+  <div className="space-y-2">
+    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</label>
+    <div className="relative">
+      {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />}
+      <input
+        className={`w-full ${Icon ? "pl-12" : "pl-6"} pr-4 py-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 ${error ? "ring-2 ring-red-400" : "focus:ring-blue-500"}`}
+        {...props}
+      />
+    </div>
+    {error && <p className="text-red-500 text-[11px] font-bold pl-1">{error}</p>}
+  </div>
+);
+
+const validateUsername = (val) => {
+  if (val.length < 3) return "Username must be at least 3 characters";
+  if (!/^[a-zA-Z0-9_]+$/.test(val)) return "Only letters, numbers and underscores allowed";
+  return "";
+};
+
+const validatePassword = (val) => {
+  if (val.length < 8) return "Password must be at least 8 characters";
+  if (!/\d/.test(val)) return "Password must contain at least 1 number";
+  return "";
 };
 
 const LeadsPage = ({ leads, setLeads, user, refresh }) => {
@@ -30,10 +50,18 @@ const LeadsPage = ({ leads, setLeads, user, refresh }) => {
   const [editingLead, setEditingLead] = useState(null);
   const [deletingLead, setDeletingLead] = useState(null);
   const [newLead, setNewLead] = useState(emptyLead);
+  const [addErrors, setAddErrors] = useState(emptyErrors);
+  const [editErrors, setEditErrors] = useState(emptyErrors);
 
   // 🔹 ADD LEAD
   const handleAddLead = async (e) => {
     e.preventDefault();
+
+    const usernameErr = validateUsername(newLead.username);
+    const passwordErr = validatePassword(newLead.password);
+    setAddErrors({ username: usernameErr, password: passwordErr });
+    if (usernameErr || passwordErr) return;
+
     try {
       await axiosInstance.post("/leads", {
         name: newLead.company,
@@ -41,14 +69,12 @@ const LeadsPage = ({ leads, setLeads, user, refresh }) => {
         email: newLead.email,
         username: newLead.username,
         password: newLead.password,
-        totalAmount: Number(newLead.totalAmount),
-        amountPaid: Number(newLead.amountPaid),
-        remaining: Number(newLead.remaining),
       });
 
       addActivityLog(`New lead "${newLead.company}" added`, "lead_add");
       setShowAdd(false);
       setNewLead(emptyLead);
+      setAddErrors(emptyErrors);
       refresh();
     } catch (err) {
       console.error(err);
@@ -58,6 +84,12 @@ const LeadsPage = ({ leads, setLeads, user, refresh }) => {
   // 🔹 UPDATE LEAD
   const handleUpdateLead = async (e) => {
     e.preventDefault();
+
+    const usernameErr = validateUsername(editingLead.username || "");
+    const passwordErr = validatePassword(editingLead.password || "");
+    setEditErrors({ username: usernameErr, password: passwordErr });
+    if (usernameErr || passwordErr) return;
+
     try {
       const id = editingLead.id || editingLead._id;
 
@@ -67,13 +99,11 @@ const LeadsPage = ({ leads, setLeads, user, refresh }) => {
         email: editingLead.email,
         username: editingLead.username,
         password: editingLead.password,
-        totalAmount: Number(editingLead.totalAmount),
-        amountPaid: Number(editingLead.amountPaid),
-        remaining: Number(editingLead.remaining),
       });
 
       addActivityLog(`Lead "${editingLead.company || editingLead.name}" updated`, "note");
       setEditingLead(null);
+      setEditErrors(emptyErrors);
       refresh();
     } catch (err) {
       console.error(err);
@@ -94,19 +124,6 @@ const LeadsPage = ({ leads, setLeads, user, refresh }) => {
       console.error(err);
     }
   };
-
-  const InputField = ({ label, icon: Icon, ...props }) => (
-    <div className="space-y-2">
-      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</label>
-      <div className="relative">
-        {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />}
-        <input
-          className={`w-full ${Icon ? "pl-12" : "pl-6"} pr-4 py-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-blue-500`}
-          {...props}
-        />
-      </div>
-    </div>
-  );
 
   return (
     <div className="p-8 text-left bg-white min-h-screen relative font-sans">
@@ -146,10 +163,8 @@ const LeadsPage = ({ leads, setLeads, user, refresh }) => {
           <tbody className="divide-y divide-slate-50">
             {leads.length === 0 ? (
               <tr>
-                <td
-                  colSpan={isAdmin ? 8 : 7}
-                  className="p-16 text-center text-slate-400 font-bold text-sm uppercase tracking-widest"
-                >
+                <td colSpan={isAdmin ? 8 : 7}
+                  className="p-16 text-center text-slate-400 font-bold text-sm uppercase tracking-widest">
                   No leads found
                 </td>
               </tr>
@@ -159,7 +174,7 @@ const LeadsPage = ({ leads, setLeads, user, refresh }) => {
                   <td className="p-6 font-black text-slate-900 text-base">
                     {lead.company || lead.name || "Unnamed"}
                   </td>
-                  <td className="p-6 text-slate-500 font-bold text-sm">{lead.email || "—"}</td>
+                  <td className="p-6 text-slate-500 font-bold text-sm">{lead.email}</td>
                   <td className="p-6 text-slate-700 font-bold text-sm">{lead.username || "—"}</td>
                   <td className="p-6 text-slate-700 font-bold text-sm">{lead.password || "—"}</td>
                   <td className="p-6 text-right font-black text-slate-900">
@@ -173,18 +188,12 @@ const LeadsPage = ({ leads, setLeads, user, refresh }) => {
                   </td>
                   {isAdmin && (
                     <td className="p-6 text-center space-x-2">
-                      <button
-                        onClick={() => setEditingLead(lead)}
-                        className="p-2 text-slate-300 hover:text-blue-600 transition-colors"
-                        type="button"
-                      >
+                      <button onClick={() => setEditingLead(lead)}
+                        className="p-2 text-slate-300 hover:text-blue-600 transition-colors" type="button">
                         <Edit2 size={18} />
                       </button>
-                      <button
-                        onClick={() => setDeletingLead(lead)}
-                        className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                        type="button"
-                      >
+                      <button onClick={() => setDeletingLead(lead)}
+                        className="p-2 text-slate-300 hover:text-red-500 transition-colors" type="button">
                         🗑️
                       </button>
                     </td>
@@ -198,29 +207,45 @@ const LeadsPage = ({ leads, setLeads, user, refresh }) => {
 
       {/* ── ADD LEAD MODAL ── */}
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
-          <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
-            <div className="p-8 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">New Lead</h2>
-              <button onClick={() => setShowAdd(false)} type="button">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+          <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+            {/* Header — fixed */}
+            <div className="p-8 bg-slate-50 border-b border-slate-100 rounded-t-[3rem] flex justify-between items-start shrink-0">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">New Lead</h2>
+                <p className="text-slate-400 font-bold text-xs mt-1">Amounts are auto-calculated from projects</p>
+              </div>
+              <button onClick={() => { setShowAdd(false); setAddErrors(emptyErrors); }} type="button">
                 <X size={24} className="text-slate-400 hover:text-slate-900" />
               </button>
             </div>
-            <form onSubmit={handleAddLead} className="p-10 space-y-5 max-h-[75vh] overflow-y-auto">
+            {/* Body — scrollable */}
+            <form onSubmit={handleAddLead} className="p-8 space-y-5 overflow-y-auto">
               <InputField label="Company Name" icon={Building} required placeholder="Acme Corp"
                 value={newLead.company} onChange={(e) => setNewLead({ ...newLead, company: e.target.value })} />
               <InputField label="Email" icon={Mail} required type="email" placeholder="contact@acme.com"
                 value={newLead.email} onChange={(e) => setNewLead({ ...newLead, email: e.target.value })} />
               <InputField label="Username" icon={User} required placeholder="acme_user"
-                value={newLead.username} onChange={(e) => setNewLead({ ...newLead, username: e.target.value })} />
-              <InputField label="Password" icon={Lock} required placeholder="••••••••"
-                value={newLead.password} onChange={(e) => setNewLead({ ...newLead, password: e.target.value })} />
-              <InputField label="Total Amount (INR)" icon={DollarSign} required type="number" placeholder="100000"
-                value={newLead.totalAmount} onChange={(e) => setNewLead({ ...newLead, totalAmount: e.target.value })} />
-              <InputField label="Amount Paid (INR)" icon={DollarSign} required type="number" placeholder="50000"
-                value={newLead.amountPaid} onChange={(e) => setNewLead({ ...newLead, amountPaid: e.target.value })} />
-              <InputField label="Remaining (INR)" icon={DollarSign} required type="number" placeholder="50000"
-                value={newLead.remaining} onChange={(e) => setNewLead({ ...newLead, remaining: e.target.value })} />
+                error={addErrors.username}
+                value={newLead.username}
+                onChange={(e) => {
+                  setNewLead({ ...newLead, username: e.target.value });
+                  setAddErrors({ ...addErrors, username: validateUsername(e.target.value) });
+                }} />
+              <InputField label="Password" icon={Lock} required placeholder="min 8 chars, 1 number"
+                error={addErrors.password}
+                value={newLead.password}
+                onChange={(e) => {
+                  setNewLead({ ...newLead, password: e.target.value });
+                  setAddErrors({ ...addErrors, password: validatePassword(e.target.value) });
+                }} />
+
+              <div className="bg-blue-50 rounded-2xl p-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">
+                  💡 Total Amount, Amount Paid & Remaining are automatically calculated from the client's projects.
+                </p>
+              </div>
+
               <button type="submit"
                 className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg">
                 Create Lead
@@ -232,33 +257,75 @@ const LeadsPage = ({ leads, setLeads, user, refresh }) => {
 
       {/* ── EDIT LEAD MODAL ── */}
       {editingLead && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-left">
-          <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
-            <div className="p-8 bg-blue-600 text-white flex justify-between items-center">
-              <h2 className="text-2xl font-black tracking-tighter uppercase">Edit Lead</h2>
-              <button onClick={() => setEditingLead(null)} type="button"><X size={24} /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+          <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+            {/* Header — fixed */}
+            <div className="p-8 bg-blue-600 text-white rounded-t-[3rem] flex justify-between items-start shrink-0">
+              <div>
+                <h2 className="text-2xl font-black tracking-tighter uppercase">Edit Lead</h2>
+                <p className="text-blue-200 text-xs font-bold mt-1">Amounts calculated from projects</p>
+              </div>
+              <button onClick={() => { setEditingLead(null); setEditErrors(emptyErrors); }} type="button">
+                <X size={24} />
+              </button>
             </div>
-            <form onSubmit={handleUpdateLead} className="p-10 space-y-5 max-h-[75vh] overflow-y-auto">
+            {/* Body — scrollable */}
+            <form onSubmit={handleUpdateLead} className="p-8 space-y-5 overflow-y-auto">
               {[
                 { label: "Company Name", key: "company", type: "text", value: editingLead.company || editingLead.name || "" },
                 { label: "Email", key: "email", type: "email", value: editingLead.email || "" },
-                { label: "Username", key: "username", type: "text", value: editingLead.username || "" },
-                { label: "Password", key: "password", type: "text", value: editingLead.password || "" },
-                { label: "Total Amount (INR)", key: "totalAmount", type: "number", value: editingLead.totalAmount ?? "" },
-                { label: "Amount Paid (INR)", key: "amountPaid", type: "number", value: editingLead.amountPaid ?? "" },
-                { label: "Remaining (INR)", key: "remaining", type: "number", value: editingLead.remaining ?? "" },
               ].map(({ label, key, type, value }) => (
                 <div key={key} className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</label>
-                  <input
-                    required
-                    type={type}
+                  <input required type={type}
                     className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-blue-500"
                     value={value}
                     onChange={(e) => setEditingLead({ ...editingLead, [key]: e.target.value })}
                   />
                 </div>
               ))}
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Username</label>
+                <input required type="text"
+                  className={`w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 ${editErrors.username ? "ring-2 ring-red-400" : "focus:ring-blue-500"}`}
+                  value={editingLead.username || ""}
+                  onChange={(e) => {
+                    setEditingLead({ ...editingLead, username: e.target.value });
+                    setEditErrors({ ...editErrors, username: validateUsername(e.target.value) });
+                  }}
+                />
+                {editErrors.username && <p className="text-red-500 text-[11px] font-bold pl-1">{editErrors.username}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Password</label>
+                <input required type="text"
+                  className={`w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 ${editErrors.password ? "ring-2 ring-red-400" : "focus:ring-blue-500"}`}
+                  value={editingLead.password || ""}
+                  onChange={(e) => {
+                    setEditingLead({ ...editingLead, password: e.target.value });
+                    setEditErrors({ ...editErrors, password: validatePassword(e.target.value) });
+                  }}
+                />
+                {editErrors.password && <p className="text-red-500 text-[11px] font-bold pl-1">{editErrors.password}</p>}
+              </div>
+
+              {/* Read-only amounts */}
+              <div className="bg-slate-50 rounded-2xl p-5 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Current Amounts (from projects)</p>
+                {[
+                  { label: "Total Amount", value: editingLead.totalAmount || 0, color: "text-slate-900" },
+                  { label: "Amount Paid", value: editingLead.amountPaid || 0, color: "text-emerald-600" },
+                  { label: "Remaining", value: editingLead.remaining || 0, color: "text-red-500" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-400">{label}</span>
+                    <span className={`font-black text-sm ${color}`}>₹{Number(value).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+
               <button type="submit"
                 className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg">
                 Save Changes
